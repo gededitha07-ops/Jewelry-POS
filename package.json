@@ -1,0 +1,16 @@
+{
+  "name": "jewelry-pos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jewelry Store Point of Sale Android App",
+  "scripts": {
+    "build": "echo Build completed"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}
