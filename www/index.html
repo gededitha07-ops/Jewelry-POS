@@ -682,12 +682,23 @@ th{background:#f7f8fa}
 </div>
 
  
- <div class="card">
-  <h3>Backup & Restore</h3>
-  <button class="btn dark">BACKUP DATA</button>
-  <input type="file" accept=".json">
-  <button class="btn">RESTORE DATA</button>
- </div>
+<div class="card">
+ <h3>Backup & Restore</h3>
+
+ <p>Save all Jewelry POS data into a backup file.</p>
+
+ <button class="btn dark" onclick="backupJewelryData()">
+  BACKUP DATA
+ </button>
+
+ <label>Select Backup File</label>
+ <input type="file" id="restoreFile" accept=".json,application/json">
+
+ <button class="btn" onclick="restoreJewelryData()">
+  RESTORE DATA
+ </button>
+</div>
+
  <div class="card">
   <h3>Printer Settings</h3>
   <p>Printer 1 - Customer Receipt (80mm)</p>
@@ -1848,6 +1859,98 @@ function renderSalesNameOptions(){
                 ${escapeProductText(s.name)}
             </option>
         `).join('');
+}
+
+function backupJewelryData(){
+    const backup = {
+        app: 'Jewelry POS',
+        version: 1,
+        backupDate: new Date().toISOString(),
+        data: {}
+    };
+
+    for(let i = 0; i < localStorage.length; i++){
+        const key = localStorage.key(i);
+        backup.data[key] = localStorage.getItem(key);
+    }
+
+    const blob = new Blob(
+        [JSON.stringify(backup, null, 2)],
+        {type: 'application/json'}
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = 'Jewelry-POS-Backup-' +
+        new Date().toISOString().slice(0,10) + '.json';
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
+
+    alert('Backup file created successfully.');
+}
+
+function restoreJewelryData(){
+    const fileInput = document.getElementById('restoreFile');
+    const file = fileInput.files[0];
+
+    if(!file){
+        alert('Please select a backup file first.');
+        return;
+    }
+
+    if(!confirm(
+        'Restore backup? All current Jewelry POS data will be replaced.'
+    )){
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(){
+        try{
+            const backup = JSON.parse(reader.result);
+
+            if(
+                backup.app !== 'Jewelry POS' ||
+                !backup.data ||
+                typeof backup.data !== 'object' ||
+                Array.isArray(backup.data)
+            ){
+                throw new Error('Invalid backup file');
+            }
+
+            for(const key in backup.data){
+                if(typeof backup.data[key] !== 'string'){
+                    throw new Error('Invalid backup data');
+                }
+            }
+
+            localStorage.clear();
+
+            for(const key in backup.data){
+                localStorage.setItem(key, backup.data[key]);
+            }
+
+            alert('Backup restored successfully. Application will reload.');
+
+            location.reload();
+
+        }catch(error){
+            alert('Invalid or damaged backup file. Restore failed.');
+        }
+    };
+
+    reader.onerror = function(){
+        alert('Unable to read backup file.');
+    };
+
+    reader.readAsText(file);
 }
 
 </script>
