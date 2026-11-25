@@ -1144,17 +1144,22 @@ function saveStockMovement(){
 renderStockManagement();
 
 function updateDashboard(){
- const totalProducts=products.length;
+ const totalProducts = products.length;
 
- const lowStock=products.filter(p=>
-  Number(p.stock)<=5 && Number(p.stock)>0
+ const lowStock = products.filter(p =>
+  Number(p.stock) <= 5 && Number(p.stock) > 0
  ).length;
 
- document.getElementById('dashProducts').textContent=totalProducts;
- document.getElementById('dashLowStock').textContent=lowStock;
+ const totalTransactions = transactions.length;
 
- document.getElementById('dashTransactions').textContent=0;
- document.getElementById('dashSales').textContent='Rp 0';
+ const totalSales = transactions.reduce((sum, t) =>
+  sum + Number(t.grandTotal || 0), 0
+ );
+
+ document.getElementById('dashProducts').textContent = totalProducts;
+ document.getElementById('dashLowStock').textContent = lowStock;
+ document.getElementById('dashTransactions').textContent = totalTransactions;
+ document.getElementById('dashSales').textContent = rupiah(totalSales);
 }
 
 updateDashboard();
@@ -1197,6 +1202,7 @@ function saveAgent(){
 
  resetAgentForm();
  renderAgents();
+ loadReportFilters();
 
  alert('Agent saved successfully.');
 }
@@ -1528,10 +1534,12 @@ function saveTransaction(){
  renderProducts();
  renderStockManagement();
  renderBillOptions();
+ renderTransactionHistory();
 
  alert('Transaction saved successfully. Bill No: '+bill.billNo);
 
  resetBill();
+ updateDashboard();
  if(typeof updateDashboard==='function') updateDashboard();
 }
 
@@ -1893,6 +1901,7 @@ function saveSalesName(){
 
     input.value = '';
     renderSalesNames();
+    loadReportFilters();
 
     alert('Sales Name saved successfully.');
 }
@@ -2140,7 +2149,19 @@ if(type === 'sales' && !sales){
     alert('Please select a Sales Name.');
     return;
 }
+if(type === 'daily' && !from){
+    alert('Please select a date for Daily Report.');
+    return;
+}
 
+if(type === 'monthly' && !from){
+    alert('Please select a date within the month for Monthly Report.');
+    return;
+} 
+if(from && to && from > to){
+    alert('Start date cannot be later than end date.');
+    return;
+}
 let periodText = 'All Dates';
 
 if(type === 'daily'){
@@ -2260,11 +2281,16 @@ function updateReportStoreHeader(){
 function saveReportPDF(){
     updateReportStoreHeader();
 
+    const oldTitle = document.title;
+    document.title = 'Jewelry-POS-Sales-Report';
+
     if(typeof window.print === 'function'){
         window.print();
     }else{
         alert('PDF printing is not available.');
     }
+
+    document.title = oldTitle;
 }
 
 </script>
