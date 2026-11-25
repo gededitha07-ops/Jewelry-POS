@@ -587,6 +587,39 @@ th{background:#f7f8fa}
 </div>
 
 <div class="card">
+ <h3>Discount Settings</h3>
+
+ <label>Discount Name</label>
+ <input id="discountName" placeholder="Example: VIP Discount">
+
+ <label>Discount Type</label>
+ <select id="discountType">
+  <option value="percent">Percentage (%)</option>
+  <option value="amount">Fixed Amount (Rp)</option>
+ </select>
+
+ <label>Discount Value</label>
+ <input type="number" id="discountValue" min="0" placeholder="Enter discount value">
+
+ <button class="btn" onclick="saveDiscountPreset()">
+  ADD DISCOUNT
+ </button>
+
+ <h3>Discount Presets</h3>
+ <table>
+  <thead>
+   <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Value</th>
+    <th>Action</th>
+   </tr>
+  </thead>
+  <tbody id="discountPresetTable"></tbody>
+ </table>
+</div>
+
+<div class="card">
  <h3>Change Owner PIN</h3>
  <label>Current Owner PIN</label>
  <input type="password" id="oldOwnerPin" inputmode="numeric">
@@ -1511,6 +1544,90 @@ function changeCashierPin(){
 
     alert('Cashier PIN changed successfully.');
 }
+
+let discountPresets = JSON.parse(
+    localStorage.getItem('jewelryDiscountPresets') || '[]'
+);
+
+function saveDiscountPreset(){
+    const name = document.getElementById('discountName').value.trim();
+    const type = document.getElementById('discountType').value;
+    const value = Number(document.getElementById('discountValue').value);
+
+    if(!name){
+        alert('Please enter discount name.');
+        return;
+    }
+
+    if(!Number.isFinite(value) || value <= 0){
+        alert('Please enter a valid discount value.');
+        return;
+    }
+
+    if(type === 'percent' && value > 100){
+        alert('Percentage cannot exceed 100%.');
+        return;
+    }
+
+    discountPresets.push({
+        id: Date.now().toString(),
+        name: name,
+        type: type,
+        value: value
+    });
+
+    localStorage.setItem(
+        'jewelryDiscountPresets',
+        JSON.stringify(discountPresets)
+    );
+
+    document.getElementById('discountName').value = '';
+    document.getElementById('discountValue').value = '';
+
+    renderDiscountPresets();
+
+    alert('Discount preset saved successfully.');
+}
+
+function renderDiscountPresets(){
+    const table = document.getElementById('discountPresetTable');
+
+    if(!table) return;
+
+    if(discountPresets.length === 0){
+        table.innerHTML = '<tr><td colspan="4">No discount presets yet.</td></tr>';
+        return;
+    }
+
+    table.innerHTML = discountPresets.map(item => `
+        <tr>
+            <td>${escapeProductText(item.name)}</td>
+            <td>${item.type === 'percent' ? 'Percentage' : 'Fixed Amount'}</td>
+            <td>${item.type === 'percent' ? item.value + '%' : rupiah(item.value)}</td>
+            <td>
+                <button class="btn danger"
+                    onclick="deleteDiscountPreset('${item.id}')">
+                    DELETE
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function deleteDiscountPreset(id){
+    if(!confirm('Delete this discount preset?')) return;
+
+    discountPresets = discountPresets.filter(item => item.id !== id);
+
+    localStorage.setItem(
+        'jewelryDiscountPresets',
+        JSON.stringify(discountPresets)
+    );
+
+    renderDiscountPresets();
+}
+
+renderDiscountPresets();
 
 </script>
 
