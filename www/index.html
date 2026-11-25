@@ -517,20 +517,61 @@ th{background:#f7f8fa}
  </div>
 </section>
 
-
 <section id="reports" class="page">
  <h2>Sales Reports</h2>
- <div class="card">
-  <label>From Date</label><input type="date">
-  <label>To Date</label><input type="date">
-  <label>Agent</label><select><option>All Agents</option></select>
-  <label>Sales</label><select><option>All Sales</option></select>
-  <button class="btn">VIEW REPORT</button>
-  <button class="btn dark">SAVE AS PDF</button>
- </div>
- <div class="card"><h3>Report Summary</h3></div>
-</section>
 
+ <div class="card">
+  <h3>Report Filter</h3>
+
+  <label>Report Type</label>
+  <select id="reportType">
+   <option value="overall">Overall Report</option>
+   <option value="daily">Daily Report</option>
+   <option value="monthly">Monthly Report</option>
+   <option value="range">Date Range Report</option>
+   <option value="agent">Agent Report</option>
+   <option value="sales">Sales Report</option>
+  </select>
+
+  <label>From Date</label>
+  <input type="date" id="reportFrom">
+
+  <label>To Date</label>
+  <input type="date" id="reportTo">
+
+  <label>Agent</label>
+  <select id="reportAgent">
+   <option value="">All Agents</option>
+  </select>
+
+  <label>Sales</label>
+  <select id="reportSales">
+   <option value="">All Sales</option>
+  </select>
+
+  <button class="btn" onclick="viewSalesReport()">
+   VIEW REPORT
+  </button>
+
+  <button class="btn dark" onclick="saveReportPDF()">
+   SAVE AS PDF
+  </button>
+ </div>
+
+ <div class="card">
+  <h3>Report Summary</h3>
+  <div id="reportSummary">
+   No report generated yet.
+  </div>
+ </div>
+
+ <div class="card">
+  <h3>Transaction Details</h3>
+  <div id="reportDetails">
+   No report generated yet.
+  </div>
+ </div>
+</section>
 
 <section id="agents" class="page">
  <h2>Agent Management</h2>
