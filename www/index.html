@@ -127,6 +127,59 @@ th{background:#f7f8fa}
  .stats{grid-template-columns:repeat(2,1fr)}
  .brand{font-size:16px}
 }
+
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+
+    .topbar,
+    .sidebar,
+    button,
+    #reports > .card:first-of-type {
+        display: none !important;
+    }
+
+    .page {
+        display: none !important;
+    }
+
+    #reports {
+        display: block !important;
+        padding: 10px !important;
+    }
+
+    #reports .card {
+        display: block !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: white !important;
+    }
+
+    #reportSummary,
+    #reportDetails {
+        color: black !important;
+    }
+
+    #reportDetails table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+    }
+
+    #reportDetails th,
+    #reportDetails td {
+        border: 1px solid #999;
+        padding: 6px;
+        color: black;
+    }
+
+    #reportDetails th {
+        background: #eee !important;
+    }
+}
+ 
 </style>
 </head>
 
@@ -2039,6 +2092,113 @@ function loadPrinterSettings(){
 }
 
 loadPrinterSettings();
+
+function loadReportFilters(){
+    const agentSelect = document.getElementById('reportAgent');
+    const salesSelect = document.getElementById('reportSales');
+
+    agentSelect.innerHTML =
+        '<option value="">All Agents</option>' +
+        agents.map(a => `
+            <option value="${escapeProductText(a.name)}">
+                ${escapeProductText(a.name)}
+            </option>
+        `).join('');
+
+    salesSelect.innerHTML =
+        '<option value="">All Sales</option>' +
+        salesNames.map(s => `
+            <option value="${escapeProductText(s.name)}">
+                ${escapeProductText(s.name)}
+            </option>
+        `).join('');
+}
+
+function viewSalesReport(){
+    const type = document.getElementById('reportType').value;
+    const from = document.getElementById('reportFrom').value;
+    const to = document.getElementById('reportTo').value;
+    const agent = document.getElementById('reportAgent').value;
+    const sales = document.getElementById('reportSales').value;
+
+    let filtered = transactions.filter(t => {
+        const date = t.date || '';
+
+        if(type === 'daily' && from && date !== from) return false;
+
+        if(type === 'monthly' && from &&
+           date.slice(0,7) !== from.slice(0,7)) return false;
+
+        if((type === 'range' || type === 'agent' || type === 'sales' ||
+            type === 'overall') && from && date < from) return false;
+
+        if((type === 'range' || type === 'agent' || type === 'sales' ||
+            type === 'overall') && to && date > to) return false;
+
+        if(agent && t.agent !== agent) return false;
+        if(sales && t.sales !== sales) return false;
+
+        return true;
+    });
+
+    const total = key => filtered.reduce(
+        (sum,t) => sum + Number(t[key] || 0), 0
+    );
+
+    const subtotal = total('subtotal');
+    const discount = total('discount');
+    const grandTotal = total('grandTotal');
+    const guide = total('guideAmount');
+    const driver = total('driverAmount');
+
+    document.getElementById('reportSummary').innerHTML = `
+        <p>Total Transactions: ${filtered.length}</p>
+        <p>Subtotal: ${rupiah(subtotal)}</p>
+        <p>Discount: ${rupiah(discount)}</p>
+        <p><strong>Grand Total: ${rupiah(grandTotal)}</strong></p>
+        <p>Guide Commission: ${rupiah(guide)}</p>
+        <p>Driver Commission: ${rupiah(driver)}</p>
+    `;
+
+    if(filtered.length === 0){
+        document.getElementById('reportDetails').innerHTML =
+            '<p>No transactions found.</p>';
+        return;
+    }
+
+    document.getElementById('reportDetails').innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Bill No.</th>
+                    <th>Date</th>
+                    <th>Sales</th>
+                    <th>Agent</th>
+                    <th>Car Plate</th>
+                    <th>Discount</th>
+                    <th>Grand Total</th>
+                    <th>Payment</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filtered.map(t => `
+                    <tr>
+                        <td>${escapeProductText(t.billNo)}</td>
+                        <td>${escapeProductText(t.date)}</td>
+                        <td>${escapeProductText(t.sales)}</td>
+                        <td>${escapeProductText(t.agent)}</td>
+                        <td>${escapeProductText(t.carPlate || '-')}</td>
+                        <td>${rupiah(t.discount)}</td>
+                        <td>${rupiah(t.grandTotal)}</td>
+                        <td>${escapeProductText(t.payment)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+loadReportFilters();
 
 </script>
 
