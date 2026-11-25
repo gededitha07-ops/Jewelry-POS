@@ -680,12 +680,21 @@ function showPage(id,button){
 }
 
 function saveStore(){
- const name=document.getElementById('storeNameInput').value.trim();
- if(name){
-  localStorage.setItem('jewelryStoreName',name);
-  document.getElementById('topStoreName').textContent=name;
- }
- alert('Store profile saved');
+    const name = document.getElementById('storeNameInput').value.trim();
+
+    if(!name){
+        alert('Please enter store name.');
+        return;
+    }
+
+    localStorage.setItem('jewelryStoreName', name);
+
+    const topName = document.getElementById('topStoreName');
+    if(topName){
+        topName.textContent = name;
+    }
+
+    alert('Store profile saved successfully.');
 }
 
 document.getElementById('billDate').value=new Date().toISOString().slice(0,10);
