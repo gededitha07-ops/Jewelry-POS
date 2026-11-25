@@ -187,30 +187,136 @@ th{background:#f7f8fa}
 </section>
 
 
+
 <section id="cashier" class="page">
  <h2>New Bill</h2>
+
  <div class="card">
-  <label>Bill No.</label><input placeholder="Automatic Bill Number" disabled>
-  <label>Date</label><input type="date" id="billDate">
-  <label>Sales Name</label><input placeholder="Enter Sales Name">
-  <label>Agent</label><select><option>Select Agent</option></select>
-  <label>Car Plate No.</label><input placeholder="Enter Car Plate Number">
+  <h3>Transaction Information</h3>
+
+  <label>Bill No.</label>
+  <input id="billNo" readonly placeholder="Automatic">
+
+  <label>Date</label>
+  <input type="date" id="billDate">
+
+  <label>Sales Name</label>
+  <input id="salesName" placeholder="Enter Sales Name">
+
+  <label>Agent</label>
+  <select id="billAgent">
+   <option value="">Select Agent</option>
+  </select>
+
+  <label>Car Plate No.</label>
+  <input id="carPlate" placeholder="Enter Car Plate Number">
  </div>
+
  <div class="card">
   <h3>Add Item</h3>
-  <label>Item Code / Item Name</label>
-  <input placeholder="Search item code or name">
-  <label>Quantity (PCS)</label><input type="number" min="1" value="1">
-  <button class="btn">ADD ITEM</button>
+
+  <label>Select Product</label>
+  <select id="billProduct">
+   <option value="">Select Product</option>
+  </select>
+
+  <label>Quantity (PCS)</label>
+  <input type="number" id="billQty" min="1" value="1">
+
+  <button class="btn" onclick="addBillItem()">ADD ITEM</button>
+
+  <hr style="border:0;border-top:1px solid #edf0f4;margin:20px 0">
+
+  <h3>Manual Item Entry</h3>
+  <p>For products not registered in Product Management.</p>
+
+  <label>Item Code</label>
+  <input id="manualItemCode" placeholder="Enter Item Code">
+
+  <label>Item Name</label>
+  <input id="manualItemName" placeholder="Enter Item Name">
+
+  <label>Selling Price (Rp)</label>
+  <input type="number" id="manualItemPrice" min="0" placeholder="Enter Price">
+
+  <label>Quantity (PCS)</label>
+  <input type="number" id="manualItemQty" min="1" value="1">
+
+  <button class="btn dark" onclick="addManualBillItem()">ADD MANUAL ITEM</button>
  </div>
+
  <div class="card">
-  <h3>Order Summary</h3>
-  <p>Subtotal: Rp 0</p>
-  <p>Discount: Rp 0</p>
-  <h2>Grand Total: Rp 0</h2>
-  <button class="btn">SAVE TRANSACTION</button>
+  <h3>Order Items</h3>
+
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>Item</th>
+      <th>Price</th>
+      <th>Qty</th>
+      <th>Total</th>
+      <th>Action</th>
+     </tr>
+    </thead>
+    <tbody id="billItemsTable">
+     <tr><td colspan="5">No items added.</td></tr>
+    </tbody>
+   </table>
+  </div>
+ </div>
+
+ <div class="card">
+  <h3>Payment & Discount</h3>
+
+  <label>Subtotal</label>
+  <input id="billSubtotal" value="Rp 0" readonly>
+
+  <label>Discount (Nominal Rp)</label>
+  <input type="number" id="billDiscount" min="0" value="0">
+
+  <label>Grand Total</label>
+  <input id="billGrandTotal" value="Rp 0" readonly>
+
+  <label>Payment Method</label>
+  <select id="billPayment">
+   <option value="">Select Payment</option>
+   <option value="Cash">Cash</option>
+   <option value="Bank Transfer">Bank Transfer</option>
+   <option value="QRIS">QRIS</option>
+  </select>
+ </div>
+
+ <div class="card">
+  <h3>Commission Settings</h3>
+
+  <label>Commission Mode</label>
+  <select id="commissionMode" onchange="toggleCommissionMode()">
+   <option value="normal">NORMAL</option>
+   <option value="custom">ATUR</option>
+  </select>
+
+  <div id="customCommissionFields" hidden>
+   <label>Guide Commission (%)</label>
+   <input type="number" id="guidePercent" min="0" step="0.01" placeholder="Guide %">
+
+   <label>Driver Commission (%)</label>
+   <input type="number" id="driverPercent" min="0" step="0.01" placeholder="Driver %">
+  </div>
+
+  <p>Commission is calculated from Grand Total after discount.</p>
+ </div>
+
+ <div class="card">
+  <h3>Transaction Summary</h3>
+  <p>Guide Commission: <strong id="guideAmount">Rp 0</strong></p>
+  <p>Driver Commission: <strong id="driverAmount">Rp 0</strong></p>
+
+  <button class="btn" onclick="saveTransaction()">SAVE TRANSACTION</button>
+  <button class="btn dark" onclick="resetBill()">NEW BILL / RESET</button>
  </div>
 </section>
+
 
 
 <section id="products" class="page">
@@ -369,13 +475,46 @@ th{background:#f7f8fa}
  <div class="card"><h3>Report Summary</h3></div>
 </section>
 
+
 <section id="agents" class="page">
  <h2>Agent Management</h2>
+
  <div class="card">
-  <label>Agent Name</label><input placeholder="Enter Agent Name">
-  <button class="btn">SAVE AGENT</button>
+  <h3 id="agentFormTitle">Add New Agent</h3>
+
+  <input type="hidden" id="editAgentId">
+
+  <label>Agent Name</label>
+  <input id="agentName" placeholder="Enter Agent Name">
+
+  <button class="btn" onclick="saveAgent()">SAVE AGENT</button>
+  <button class="btn dark" onclick="resetAgentForm()">CANCEL / RESET</button>
+ </div>
+
+ <div class="card">
+  <h3>Agent List</h3>
+
+  <input id="agentSearch"
+   placeholder="Search Agent Name"
+   oninput="renderAgents()">
+
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>No.</th>
+      <th>Agent Name</th>
+      <th>Action</th>
+     </tr>
+    </thead>
+    <tbody id="agentTable">
+     <tr><td colspan="3">No agents yet.</td></tr>
+    </tbody>
+   </table>
+  </div>
  </div>
 </section>
+
 
 <section id="settings" class="page">
  <h2>Settings</h2>
@@ -719,6 +858,401 @@ function updateDashboard(){
 }
 
 updateDashboard();
+
+// JEWELRY POS - AGENT MANAGEMENT
+
+let agents = JSON.parse(
+ localStorage.getItem('jewelryAgents') || '[]'
+);
+
+function saveAgent(){
+ const id=document.getElementById('editAgentId').value;
+ const name=document.getElementById('agentName').value.trim();
+
+ if(!name){
+  alert('Please enter Agent Name.');
+  return;
+ }
+
+ const duplicate=agents.some(a=>
+  a.name.toLowerCase()===name.toLowerCase() && a.id!==id
+ );
+
+ if(duplicate){
+  alert('Agent already exists.');
+  return;
+ }
+
+ if(id){
+  const index=agents.findIndex(a=>a.id===id);
+  if(index!==-1) agents[index].name=name;
+ }else{
+  agents.push({
+   id:Date.now().toString(),
+   name
+  });
+ }
+
+ localStorage.setItem('jewelryAgents',JSON.stringify(agents));
+
+ resetAgentForm();
+ renderAgents();
+
+ alert('Agent saved successfully.');
+}
+
+function renderAgents(){
+ const table=document.getElementById('agentTable');
+ if(!table)return;
+
+ const search=document.getElementById('agentSearch').value.toLowerCase();
+
+ const filtered=agents.filter(a=>
+  a.name.toLowerCase().includes(search)
+ );
+
+ if(filtered.length===0){
+  table.innerHTML='<tr><td colspan="3">No agents found.</td></tr>';
+  return;
+ }
+
+ table.innerHTML=filtered.map((a,index)=>`
+  <tr>
+   <td>${index+1}</td>
+   <td>${escapeProductText(a.name)}</td>
+   <td>
+    <button class="btn" onclick="editAgent('${a.id}')">EDIT</button>
+    <button class="btn dark" onclick="deleteAgent('${a.id}')">DELETE</button>
+   </td>
+  </tr>
+ `).join('');
+}
+
+function editAgent(id){
+ const agent=agents.find(a=>a.id===id);
+ if(!agent)return;
+
+ document.getElementById('editAgentId').value=agent.id;
+ document.getElementById('agentName').value=agent.name;
+ document.getElementById('agentFormTitle').textContent='Edit Agent';
+
+ document.getElementById('agents').scrollIntoView({behavior:'smooth'});
+}
+
+function deleteAgent(id){
+ if(!confirm('Delete this Agent?'))return;
+
+ agents=agents.filter(a=>a.id!==id);
+ localStorage.setItem('jewelryAgents',JSON.stringify(agents));
+
+ renderAgents();
+}
+
+function resetAgentForm(){
+ document.getElementById('editAgentId').value='';
+ document.getElementById('agentName').value='';
+ document.getElementById('agentFormTitle').textContent='Add New Agent';
+}
+
+renderAgents();
+
+// JEWELRY POS - CASHIER SYSTEM
+
+let transactions = JSON.parse(
+ localStorage.getItem('jewelryTransactions') || '[]'
+);
+
+let billCart = [];
+
+function rupiah(value){
+ return 'Rp ' + Number(value||0).toLocaleString('id-ID');
+}
+
+function generateBillNo(){
+ const number=Number(localStorage.getItem('jewelryBillCounter')||0)+1;
+ localStorage.setItem('jewelryBillCounter',number);
+ return 'JWL-'+String(number).padStart(5,'0');
+}
+
+function initializeBill(){
+ document.getElementById('billNo').value=generateBillNo();
+
+ const now=new Date();
+ const localDate=new Date(now.getTime()-now.getTimezoneOffset()*60000)
+  .toISOString().slice(0,10);
+
+ document.getElementById('billDate').value=localDate;
+
+ renderBillOptions();
+ renderBillCart();
+ updateBillTotal();
+}
+
+function renderBillOptions(){
+ const productSelect=document.getElementById('billProduct');
+ const agentSelect=document.getElementById('billAgent');
+
+ if(productSelect){
+  productSelect.innerHTML='<option value="">Select Product</option>'+
+   products.map(p=>`
+    <option value="${escapeProductText(p.id)}">
+     ${escapeProductText(p.code)} - ${escapeProductText(p.name)}
+    </option>
+   `).join('');
+ }
+
+ if(agentSelect){
+  agentSelect.innerHTML='<option value="">Select Agent</option>'+
+   agents.map(a=>`
+    <option value="${escapeProductText(a.id)}">
+     ${escapeProductText(a.name)}
+    </option>
+   `).join('');
+ }
+}
+
+function addBillItem(){
+ const id=document.getElementById('billProduct').value;
+ const qty=Number(document.getElementById('billQty').value);
+ const product=products.find(p=>p.id===id);
+
+ if(!product){
+  alert('Please select a product.');
+  return;
+ }
+
+ if(!Number.isInteger(qty)||qty<=0){
+  alert('Please enter a valid quantity.');
+  return;
+ }
+
+ billCart.push({
+  productId:product.id,
+  code:product.code,
+  name:product.name,
+  price:Number(product.price),
+  qty,
+  manual:false
+ });
+
+ document.getElementById('billQty').value=1;
+ renderBillCart();
+ updateBillTotal();
+}
+
+function addManualBillItem(){
+ const code=document.getElementById('manualItemCode').value.trim();
+ const name=document.getElementById('manualItemName').value.trim();
+ const price=Number(document.getElementById('manualItemPrice').value);
+ const qty=Number(document.getElementById('manualItemQty').value);
+
+ if(!code||!name){
+  alert('Please enter Item Code and Item Name.');
+  return;
+ }
+
+ if(!Number.isFinite(price)||price<0||
+    !Number.isInteger(qty)||qty<=0){
+  alert('Please enter a valid price and quantity.');
+  return;
+ }
+
+ billCart.push({
+  productId:null,
+  code,
+  name,
+  price,
+  qty,
+  manual:true
+ });
+
+ document.getElementById('manualItemCode').value='';
+ document.getElementById('manualItemName').value='';
+ document.getElementById('manualItemPrice').value='';
+ document.getElementById('manualItemQty').value=1;
+
+ renderBillCart();
+ updateBillTotal();
+}
+
+function renderBillCart(){
+ const table=document.getElementById('billItemsTable');
+
+ if(billCart.length===0){
+  table.innerHTML='<tr><td colspan="5">No items added.</td></tr>';
+  return;
+ }
+
+ table.innerHTML=billCart.map((item,index)=>`
+  <tr>
+   <td>${escapeProductText(item.code)} - ${escapeProductText(item.name)}</td>
+   <td>${rupiah(item.price)}</td>
+   <td>${item.qty}</td>
+   <td>${rupiah(item.price*item.qty)}</td>
+   <td>
+    <button class="btn dark" onclick="removeBillItem(${index})">REMOVE</button>
+   </td>
+  </tr>
+ `).join('');
+}
+
+function removeBillItem(index){
+ billCart.splice(index,1);
+ renderBillCart();
+ updateBillTotal();
+}
+
+function getBillSubtotal(){
+ return billCart.reduce((sum,item)=>sum+(item.price*item.qty),0);
+}
+
+function getCommissionRates(){
+ let guide=0;
+ let driver=0;
+
+ if(document.getElementById('commissionMode').value==='custom'){
+  guide=Number(document.getElementById('guidePercent').value)||0;
+  driver=Number(document.getElementById('driverPercent').value)||0;
+ }else{
+  guide=Number(localStorage.getItem('jewelryGuidePercent'))||0;
+  driver=Number(localStorage.getItem('jewelryDriverPercent'))||0;
+ }
+
+ return {guide,driver};
+}
+
+function toggleCommissionMode(){
+ const custom=document.getElementById('commissionMode').value==='custom';
+ document.getElementById('customCommissionFields').hidden=!custom;
+ updateBillTotal();
+}
+
+function updateBillTotal(){
+ const subtotal=getBillSubtotal();
+ const discount=Number(document.getElementById('billDiscount').value)||0;
+ const grandTotal=Math.max(0,subtotal-discount);
+ const rates=getCommissionRates();
+
+ document.getElementById('billSubtotal').value=rupiah(subtotal);
+ document.getElementById('billGrandTotal').value=rupiah(grandTotal);
+ document.getElementById('guideAmount').textContent=
+  rupiah(grandTotal*rates.guide/100);
+ document.getElementById('driverAmount').textContent=
+  rupiah(grandTotal*rates.driver/100);
+}
+
+function saveTransaction(){
+ const sales=document.getElementById('salesName').value.trim();
+ const agentId=document.getElementById('billAgent').value;
+ const agent=agents.find(a=>a.id===agentId);
+ const date=document.getElementById('billDate').value;
+ const payment=document.getElementById('billPayment').value;
+ const discount=Number(document.getElementById('billDiscount').value)||0;
+ const subtotal=getBillSubtotal();
+
+ if(billCart.length===0){
+  alert('Please add at least one item.');
+  return;
+ }
+
+ if(!sales||!agent||!date||!payment){
+  alert('Please complete Sales Name, Agent, Date and Payment Method.');
+  return;
+ }
+
+ if(!Number.isFinite(discount)||discount<0||discount>subtotal){
+  alert('Discount cannot exceed Subtotal.');
+  return;
+ }
+
+ const rates=getCommissionRates();
+
+ if(!Number.isFinite(rates.guide)||!Number.isFinite(rates.driver)||
+    rates.guide<0||rates.driver<0||rates.guide>100||rates.driver>100){
+  alert('Please enter valid commission percentages (0–100).');
+  return;
+ }
+
+ const grandTotal=subtotal-discount;
+ const guideAmount=grandTotal*rates.guide/100;
+ const driverAmount=grandTotal*rates.driver/100;
+
+ const bill={
+  id:Date.now().toString(),
+  billNo:document.getElementById('billNo').value,
+  date,
+  sales,
+  agent:agent.name,
+  agentId:agent.id,
+  carPlate:document.getElementById('carPlate').value.trim(),
+  items:billCart.map(item=>({...item})),
+  subtotal,
+  discount,
+  grandTotal,
+  payment,
+  commissionMode:document.getElementById('commissionMode').value,
+  guidePercent:rates.guide,
+  guideAmount,
+  driverPercent:rates.driver,
+  driverAmount,
+  createdAt:new Date().toISOString()
+ };
+
+ // Reduce stock for catalog products only.
+ bill.items.forEach(item=>{
+  if(!item.manual){
+   const product=products.find(p=>p.id===item.productId);
+   if(product){
+    product.stock=Number(product.stock||0)-item.qty;
+
+    stockHistory.push({
+     date:new Date().toLocaleString('id-ID'),
+     productId:product.id,
+     item:product.code+' - '+product.name,
+     type:'Sale',
+     qty:-item.qty,
+     notes:'Bill '+bill.billNo
+    });
+   }
+  }
+ });
+
+ transactions.push(bill);
+
+ localStorage.setItem('jewelryProducts',JSON.stringify(products));
+ localStorage.setItem('jewelryStockHistory',JSON.stringify(stockHistory));
+ localStorage.setItem('jewelryTransactions',JSON.stringify(transactions));
+
+ renderProducts();
+ renderStockManagement();
+ renderBillOptions();
+
+ alert('Transaction saved successfully. Bill No: '+bill.billNo);
+
+ resetBill();
+ if(typeof updateDashboard==='function') updateDashboard();
+}
+
+function resetBill(){
+ billCart=[];
+ document.getElementById('salesName').value='';
+ document.getElementById('billAgent').value='';
+ document.getElementById('carPlate').value='';
+ document.getElementById('billPayment').value='';
+ document.getElementById('billDiscount').value=0;
+ document.getElementById('commissionMode').value='normal';
+ document.getElementById('guidePercent').value='';
+ document.getElementById('driverPercent').value='';
+ document.getElementById('customCommissionFields').hidden=true;
+
+ initializeBill();
+}
+
+document.getElementById('billDiscount').addEventListener('input',updateBillTotal);
+document.getElementById('guidePercent').addEventListener('input',updateBillTotal);
+document.getElementById('driverPercent').addEventListener('input',updateBillTotal);
+
+initializeBill();
 
 </script>
 
