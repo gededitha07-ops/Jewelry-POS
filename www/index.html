@@ -629,6 +629,29 @@ th{background:#f7f8fa}
 </div>
 
 <div class="card">
+ <h3>Sales Name Settings</h3>
+
+ <label>Sales Name</label>
+ <input type="text" id="salesNameInput"
+        placeholder="Enter Sales Name">
+
+ <button class="btn" onclick="saveSalesName()">
+  ADD SALES NAME
+ </button>
+
+ <h3>Sales List</h3>
+ <table>
+  <thead>
+   <tr>
+    <th>Sales Name</th>
+    <th>Action</th>
+   </tr>
+  </thead>
+  <tbody id="salesNameTable"></tbody>
+ </table>
+</div>
+
+<div class="card">
  <h3>Change Owner PIN</h3>
  <label>Current Owner PIN</label>
  <input type="password" id="oldOwnerPin" inputmode="numeric">
@@ -1690,6 +1713,119 @@ function applyDiscountPreset(){
 
     alert('Discount applied successfully.');
 }
+
+let salesNames = JSON.parse(
+    localStorage.getItem('jewelrySalesNames') || '[]'
+);
+
+function saveSalesName(){
+    const input = document.getElementById('salesNameInput');
+    const name = input.value.trim();
+
+    if(!name){
+        alert('Please enter Sales Name.');
+        return;
+    }
+
+    const exists = salesNames.some(
+        s => s.name.toLowerCase() === name.toLowerCase()
+    );
+
+    if(exists){
+        alert('Sales Name already exists.');
+        return;
+    }
+
+    salesNames.push({
+        id: Date.now().toString(),
+        name: name
+    });
+
+    localStorage.setItem(
+        'jewelrySalesNames',
+        JSON.stringify(salesNames)
+    );
+
+    input.value = '';
+    renderSalesNames();
+
+    alert('Sales Name saved successfully.');
+}
+
+function renderSalesNames(){
+    const table = document.getElementById('salesNameTable');
+    if(!table) return;
+
+    if(salesNames.length === 0){
+        table.innerHTML =
+            '<tr><td colspan="2">No Sales Name yet.</td></tr>';
+        return;
+    }
+
+    table.innerHTML = salesNames.map(s => `
+        <tr>
+            <td>${escapeProductText(s.name)}</td>
+            <td>
+                <button class="btn" onclick="editSalesName('${s.id}')">
+                    EDIT
+                </button>
+                <button class="btn danger" onclick="deleteSalesName('${s.id}')">
+                    DELETE
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function editSalesName(id){
+    const sales = salesNames.find(s => s.id === id);
+    if(!sales) return;
+
+    const newName = prompt('Enter new Sales Name:', sales.name);
+
+    if(newName === null) return;
+
+    const name = newName.trim();
+
+    if(!name){
+        alert('Sales Name cannot be empty.');
+        return;
+    }
+
+    const exists = salesNames.some(
+        s => s.id !== id &&
+        s.name.toLowerCase() === name.toLowerCase()
+    );
+
+    if(exists){
+        alert('Sales Name already exists.');
+        return;
+    }
+
+    sales.name = name;
+
+    localStorage.setItem(
+        'jewelrySalesNames',
+        JSON.stringify(salesNames)
+    );
+
+    renderSalesNames();
+}
+
+function deleteSalesName(id){
+    if(!confirm('Delete this Sales Name?')) return;
+
+    salesNames = salesNames.filter(s => s.id !== id);
+
+    localStorage.setItem(
+        'jewelrySalesNames',
+        JSON.stringify(salesNames)
+    );
+
+    renderSalesNames();
+}
+
+renderSalesNames();
 
 </script>
 
