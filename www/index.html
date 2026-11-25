@@ -272,6 +272,15 @@ th{background:#f7f8fa}
   <label>Subtotal</label>
   <input id="billSubtotal" value="Rp 0" readonly>
 
+<label>Select Discount Preset</label>
+<select id="billDiscountPreset">
+ <option value="">No Preset Discount</option>
+</select>
+
+<button class="btn" onclick="applyDiscountPreset()">
+ APPLY DISCOUNT
+</button>
+
   <label>Discount (Nominal Rp)</label>
   <input type="number" id="billDiscount" min="0" value="0">
 
@@ -1628,6 +1637,49 @@ function deleteDiscountPreset(id){
 }
 
 renderDiscountPresets();
+
+function renderBillDiscountPresets(){
+    const select = document.getElementById('billDiscountPreset');
+    if(!select) return;
+
+    select.innerHTML = `
+        <option value="">No Preset Discount</option>
+        ${discountPresets.map(item => `
+            <option value="${item.id}">
+                ${escapeProductText(item.name)}
+            </option>
+        `).join('')}
+    `;
+}
+
+function applyDiscountPreset(){
+    const id = document.getElementById('billDiscountPreset').value;
+
+    if(!id){
+        alert('Please select a discount preset.');
+        return;
+    }
+
+    const preset = discountPresets.find(item => item.id === id);
+    if(!preset) return;
+
+    let discount = 0;
+
+    if(preset.type === 'percent'){
+        discount = getBillSubtotal() * preset.value / 100;
+    }else{
+        discount = preset.value;
+    }
+
+    discount = Math.min(discount, getBillSubtotal());
+
+    document.getElementById('billDiscount').value =
+        Math.round(discount);
+
+    updateBillTotal();
+
+    alert('Discount applied successfully.');
+}
 
 </script>
 
