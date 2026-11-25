@@ -611,12 +611,21 @@ th{background:#f7f8fa}
   </button>
  </div>
 
- <div class="card">
-  <h3>Report Summary</h3>
-  <div id="reportSummary">
-   No report generated yet.
-  </div>
+ 
+<div class="card">
+ <div id="reportStoreHeader" style="text-align:center;margin-bottom:20px;">
+  <img id="reportStoreLogo" style="max-width:100px;max-height:100px;object-fit:contain;" hidden>
+  <h2 id="reportStoreName">Jewelry POS</h2>
+  <h3>Sales Report</h3>
+  <p id="reportPeriod">Report Period: All Dates</p>
  </div>
+
+ <h3>Report Summary</h3>
+ <div id="reportSummary">
+  No report generated yet.
+ </div>
+</div>
+
 
  <div class="card">
   <h3>Transaction Details</h3>
@@ -2115,11 +2124,39 @@ function loadReportFilters(){
 }
 
 function viewSalesReport(){
+ updateReportStoreHeader();
     const type = document.getElementById('reportType').value;
     const from = document.getElementById('reportFrom').value;
     const to = document.getElementById('reportTo').value;
     const agent = document.getElementById('reportAgent').value;
     const sales = document.getElementById('reportSales').value;
+ 
+if(type === 'agent' && !agent){
+    alert('Please select an Agent.');
+    return;
+}
+
+if(type === 'sales' && !sales){
+    alert('Please select a Sales Name.');
+    return;
+}
+
+let periodText = 'All Dates';
+
+if(type === 'daily'){
+    periodText = 'Date: ' + (from || 'Not Selected');
+}
+else if(type === 'monthly'){
+    periodText = 'Month: ' + (from ? from.slice(0,7) : 'Not Selected');
+}
+else if(from || to){
+    periodText = 'From: ' + (from || 'Beginning') +
+                 ' | To: ' + (to || 'Today');
+}
+
+document.getElementById('reportPeriod').textContent =
+    'Report Period: ' + periodText;
+
 
     let filtered = transactions.filter(t => {
         const date = t.date || '';
@@ -2199,6 +2236,36 @@ function viewSalesReport(){
 }
 
 loadReportFilters();
+
+function updateReportStoreHeader(){
+    const storeName =
+        localStorage.getItem('jewelryStoreName') || 'Jewelry POS';
+
+    const storeLogo =
+        localStorage.getItem('jewelryStoreLogo');
+
+    document.getElementById('reportStoreName').textContent =
+        storeName;
+
+    const logo = document.getElementById('reportStoreLogo');
+
+    if(storeLogo){
+        logo.src = storeLogo;
+        logo.hidden = false;
+    }else{
+        logo.hidden = true;
+    }
+}
+
+function saveReportPDF(){
+    updateReportStoreHeader();
+
+    if(typeof window.print === 'function'){
+        window.print();
+    }else{
+        alert('PDF printing is not available.');
+    }
+}
 
 </script>
 
