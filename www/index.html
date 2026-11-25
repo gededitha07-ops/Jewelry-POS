@@ -200,8 +200,12 @@ th{background:#f7f8fa}
   <label>Date</label>
   <input type="date" id="billDate">
 
-  <label>Sales Name</label>
-  <input id="salesName" placeholder="Enter Sales Name">
+  
+<label>Sales Name</label>
+<select id="salesName">
+ <option value="">Select Sales Name</option>
+</select>
+
 
   <label>Agent</label>
   <select id="billAgent">
@@ -1166,6 +1170,7 @@ function renderBillOptions(){
    `).join('');
  }
  renderBillDiscountPresets();
+ renderSalesNameOptions();
 }
 
 function addBillItem(){
@@ -1755,6 +1760,7 @@ function saveSalesName(){
 function renderSalesNames(){
     const table = document.getElementById('salesNameTable');
     if(!table) return;
+    renderSalesNameOptions();
 
     if(salesNames.length === 0){
         table.innerHTML =
@@ -1826,6 +1832,23 @@ function deleteSalesName(id){
 }
 
 renderSalesNames();
+
+function renderSalesNameOptions(){
+    const select = document.getElementById('salesName');
+    if(!select) return;
+
+    const names = JSON.parse(
+        localStorage.getItem('jewelrySalesNames') || '[]'
+    );
+
+    select.innerHTML =
+        '<option value="">Select Sales Name</option>' +
+        names.map(s => `
+            <option value="${escapeProductText(s.name)}">
+                ${escapeProductText(s.name)}
+            </option>
+        `).join('');
+}
 
 </script>
 
