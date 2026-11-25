@@ -1,0 +1,6 @@
+{
+  "appId": "com.jewelrypos.app",
+  "appName": "Jewelry POS",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
