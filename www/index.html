@@ -179,7 +179,52 @@ th{background:#f7f8fa}
         background: #eee !important;
     }
 }
- 
+@media print {
+
+ body.printing-agent-report .topbar,
+ body.printing-agent-report .sidebar,
+ body.printing-agent-report button,
+ body.printing-agent-report #reports > .card:first-of-type,
+ body.printing-agent-report #reports > .card:nth-of-type(2),
+ body.printing-agent-report #reports > .card:nth-of-type(3) {
+    display:none !important;
+ }
+
+ body.printing-agent-report .page {
+    display:none !important;
+ }
+
+ body.printing-agent-report #reports {
+    display:block !important;
+    padding:10px !important;
+ }
+
+ body.printing-agent-report #reports > .card:last-of-type {
+    display:block !important;
+    box-shadow:none !important;
+    border:none !important;
+    background:white !important;
+ }
+
+ body.printing-agent-report #agentReportHeader,
+ body.printing-agent-report #agentReportSummary,
+ body.printing-agent-report #agentReportDetails {
+    color:black !important;
+ }
+
+ body.printing-agent-report #agentReportDetails table {
+    width:100%;
+    border-collapse:collapse;
+    font-size:10px;
+ }
+
+ body.printing-agent-report #agentReportDetails th,
+ body.printing-agent-report #agentReportDetails td {
+    border:1px solid #999;
+    padding:6px;
+    color:black;
+ }
+} 
 </style>
 </head>
 
@@ -633,6 +678,50 @@ th{background:#f7f8fa}
    No report generated yet.
   </div>
  </div>
+ <div class="card">
+ <h3>Agent Report</h3>
+
+ <label>Select Agent</label>
+ <select id="agentReportSelect">
+  <option value="">Select Agent</option>
+ </select>
+
+ <label>From Date</label>
+ <input type="date" id="agentReportFrom">
+
+ <label>To Date</label>
+ <input type="date" id="agentReportTo">
+
+ <button class="btn" onclick="viewAgentReport()">
+  VIEW AGENT REPORT
+ </button>
+
+ <button class="btn dark" onclick="saveAgentReportPDF()">
+  SAVE AGENT REPORT PDF
+ </button>
+</div>
+
+<div class="card">
+ <div id="agentReportHeader" style="text-align:center;">
+  <img id="agentReportLogo"
+       style="max-width:100px;max-height:100px;object-fit:contain;"
+       hidden>
+  <h2 id="agentReportStoreName">Jewelry POS</h2>
+  <h3>Agent Sales Report</h3>
+  <p id="agentReportPeriod">Report Period: -</p>
+  <p id="agentReportName">Agent: -</p>
+ </div>
+
+ <h3>Agent Report Summary</h3>
+ <div id="agentReportSummary">
+  No report generated yet.
+ </div>
+
+ <h3>Transaction Details</h3>
+ <div id="agentReportDetails">
+  No report generated yet.
+ </div>
+</div>
 </section>
 
 <section id="agents" class="page">
@@ -2130,6 +2219,15 @@ function loadReportFilters(){
                 ${escapeProductText(s.name)}
             </option>
         `).join('');
+ const agentReportSelect = document.getElementById('agentReportSelect');
+
+if(agentReportSelect){
+    agentReportSelect.innerHTML =
+        '<option value="">Select Agent</option>' +
+        agents.map(a =>
+            `<option value="${escapeProductText(a.name)}">${escapeProductText(a.name)}</option>`
+        ).join('');
+}
 }
 
 function viewSalesReport(){
@@ -2292,7 +2390,130 @@ function saveReportPDF(){
 
     document.title = oldTitle;
 }
+function viewAgentReport(){
 
+    const agent = document.getElementById('agentReportSelect').value;
+    const from = document.getElementById('agentReportFrom').value;
+    const to = document.getElementById('agentReportTo').value;
+
+    if(!agent){
+        alert('Please select an Agent.');
+        return;
+    }
+
+    if(from && to && from > to){
+        alert('Start date cannot be later than end date.');
+        return;
+    }
+
+    const filtered = transactions.filter(t => {
+        const date = t.date || '';
+
+        if(t.agent !== agent) return false;
+        if(from && date < from) return false;
+        if(to && date > to) return false;
+
+        return true;
+    });
+
+    const total = key => filtered.reduce(
+        (sum,t) => sum + Number(t[key] || 0), 0
+    );
+
+    const subtotal = total('subtotal');
+    const discount = total('discount');
+    const grandTotal = total('grandTotal');
+    const guide = total('guideAmount');
+    const driver = total('driverAmount');
+
+    const storeName = localStorage.getItem('jewelryStoreName') || 'Jewelry POS';
+    const storeLogo = localStorage.getItem('jewelryStoreLogo');
+
+    document.getElementById('agentReportStoreName').textContent = storeName;
+    document.getElementById('agentReportName').textContent = 'Agent: ' + agent;
+
+    const logo = document.getElementById('agentReportLogo');
+
+    if(storeLogo){
+        logo.src = storeLogo;
+        logo.hidden = false;
+    }else{
+        logo.hidden = true;
+    }
+
+    document.getElementById('agentReportPeriod').textContent =
+        'From: ' + (from || 'Beginning') +
+        ' | To: ' + (to || 'Today');
+
+    document.getElementById('agentReportSummary').innerHTML = `
+        <p>Total Transactions: ${filtered.length}</p>
+        <p>Subtotal: ${rupiah(subtotal)}</p>
+        <p>Discount: ${rupiah(discount)}</p>
+        <p><strong>Grand Total: ${rupiah(grandTotal)}</strong></p>
+        <p>Guide Commission: ${rupiah(guide)}</p>
+        <p>Driver Commission: ${rupiah(driver)}</p>
+    `;
+
+    if(filtered.length === 0){
+        document.getElementById('agentReportDetails').innerHTML =
+            '<p>No transactions found.</p>';
+        return;
+    }
+
+    document.getElementById('agentReportDetails').innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Bill No.</th>
+                    <th>Date</th>
+                    <th>Sales</th>
+                    <th>Car Plate</th>
+                    <th>Grand Total</th>
+                    <th>Guide Commission</th>
+                    <th>Driver Commission</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filtered.map(t => `
+                    <tr>
+                        <td>${escapeProductText(t.billNo)}</td>
+                        <td>${escapeProductText(t.date)}</td>
+                        <td>${escapeProductText(t.sales)}</td>
+                        <td>${escapeProductText(t.carPlate || '-')}</td>
+                        <td>${rupiah(t.grandTotal)}</td>
+                        <td>${rupiah(t.guideAmount)}</td>
+                        <td>${rupiah(t.driverAmount)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+ 
+ function saveAgentReportPDF(){
+
+    const agent = document.getElementById('agentReportSelect').value;
+
+    if(!agent || document.getElementById('agentReportSummary').textContent === 'No report generated yet.'){
+    alert('Please generate an Agent Report first.');
+    return;
+}
+
+    const oldTitle = document.title;
+
+    document.title = 'Jewelry-POS-Agent-Report-' +
+        agent.replace(/[^a-z0-9]/gi,'-');
+
+    document.body.classList.add('printing-agent-report');
+
+    window.onafterprint = function(){
+        document.body.classList.remove('printing-agent-report');
+        document.title = oldTitle;
+        window.onafterprint = null;
+    };
+
+    window.print();
+}
 </script>
 
 </body>
