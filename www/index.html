@@ -569,6 +569,23 @@ th{background:#f7f8fa}
   <input id="logoInput" type="file" accept="image/*">
   <button class="btn" onclick="saveStore()">SAVE STORE PROFILE</button>
  </div>
+ 
+<div class="card">
+ <h3>Commission Settings</h3>
+
+ <label>Default Guide Commission (%)</label>
+ <input type="number" id="settingGuidePercent"
+        min="0" max="100" step="0.1" placeholder="0">
+
+ <label>Default Driver Commission (%)</label>
+ <input type="number" id="settingDriverPercent"
+        min="0" max="100" step="0.1" placeholder="0">
+
+ <button class="btn" onclick="saveCommissionSettings()">
+  SAVE COMMISSION SETTINGS
+ </button>
+</div>
+
  <div class="card">
   <h3>Security & PIN</h3>
   <label>Owner PIN</label><input type="password" placeholder="Change Owner PIN">
@@ -1389,6 +1406,41 @@ function closeTransactionDetail(){
 }
 
 renderTransactionHistory();
+
+function saveCommissionSettings(){
+    const guide = Number(
+        document.getElementById('settingGuidePercent').value
+    );
+
+    const driver = Number(
+        document.getElementById('settingDriverPercent').value
+    );
+
+    if(
+        !Number.isFinite(guide) ||
+        !Number.isFinite(driver) ||
+        guide < 0 || guide > 100 ||
+        driver < 0 || driver > 100
+    ){
+        alert('Commission must be between 0 and 100%.');
+        return;
+    }
+
+    localStorage.setItem('jewelryGuidePercent', guide);
+    localStorage.setItem('jewelryDriverPercent', driver);
+
+    alert('Commission settings saved successfully.');
+}
+
+function loadCommissionSettings(){
+    document.getElementById('settingGuidePercent').value =
+        localStorage.getItem('jewelryGuidePercent') || 0;
+
+    document.getElementById('settingDriverPercent').value =
+        localStorage.getItem('jewelryDriverPercent') || 0;
+}
+
+loadCommissionSettings();
 
 </script>
 
