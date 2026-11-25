@@ -457,10 +457,53 @@ th{background:#f7f8fa}
 </section>
 
 
+
 <section id="history" class="page">
  <h2>Transaction History</h2>
- <div class="card"><p>No transactions yet.</p></div>
+
+ <div class="card">
+  <label>Search Bill No. / Sales / Agent</label>
+  <input id="historySearch"
+   placeholder="Search transaction..."
+   oninput="renderTransactionHistory()">
+
+  <label>From Date</label>
+  <input type="date" id="historyFrom" onchange="renderTransactionHistory()">
+
+  <label>To Date</label>
+  <input type="date" id="historyTo" onchange="renderTransactionHistory()">
+ </div>
+
+ <div class="card">
+  <h3>Transaction List</h3>
+
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>Bill No.</th>
+      <th>Date</th>
+      <th>Sales</th>
+      <th>Agent</th>
+      <th>Grand Total</th>
+      <th>Payment</th>
+      <th>Action</th>
+     </tr>
+    </thead>
+    <tbody id="historyTable">
+     <tr><td colspan="7">No transactions yet.</td></tr>
+    </tbody>
+   </table>
+  </div>
+ </div>
+
+ <div class="card" id="transactionDetail" hidden>
+  <h3>Transaction Detail</h3>
+  <div id="transactionDetailContent"></div>
+  <button class="btn dark" onclick="closeTransactionDetail()">CLOSE</button>
+ </div>
 </section>
+
 
 <section id="reports" class="page">
  <h2>Sales Reports</h2>
@@ -1253,6 +1296,99 @@ document.getElementById('guidePercent').addEventListener('input',updateBillTotal
 document.getElementById('driverPercent').addEventListener('input',updateBillTotal);
 
 initializeBill();
+
+// JEWELRY POS - TRANSACTION HISTORY
+
+function renderTransactionHistory(){
+ const table=document.getElementById('historyTable');
+ if(!table)return;
+
+ const search=document.getElementById('historySearch').value.toLowerCase();
+ const from=document.getElementById('historyFrom').value;
+ const to=document.getElementById('historyTo').value;
+
+ const filtered=transactions.filter(t=>{
+  const matchSearch=
+   t.billNo.toLowerCase().includes(search)||
+   t.sales.toLowerCase().includes(search)||
+   t.agent.toLowerCase().includes(search);
+
+  const matchFrom=!from||t.date>=from;
+  const matchTo=!to||t.date<=to;
+
+  return matchSearch&&matchFrom&&matchTo;
+ });
+
+ if(filtered.length===0){
+  table.innerHTML='<tr><td colspan="7">No transactions found.</td></tr>';
+  return;
+ }
+
+ table.innerHTML=filtered.slice().reverse().map(t=>`
+  <tr>
+   <td>${escapeProductText(t.billNo)}</td>
+   <td>${escapeProductText(t.date)}</td>
+   <td>${escapeProductText(t.sales)}</td>
+   <td>${escapeProductText(t.agent)}</td>
+   <td>${rupiah(t.grandTotal)}</td>
+   <td>${escapeProductText(t.payment)}</td>
+   <td>
+    <button class="btn" onclick="viewTransaction('${t.id}')">DETAIL</button>
+   </td>
+  </tr>
+ `).join('');
+}
+
+function viewTransaction(id){
+ const t=transactions.find(x=>x.id===id);
+ if(!t)return;
+
+ let items=t.items.map(item=>`
+  <tr>
+   <td>${escapeProductText(item.code)}</td>
+   <td>${escapeProductText(item.name)}</td>
+   <td>${item.qty}</td>
+   <td>${rupiah(item.price)}</td>
+   <td>${rupiah(item.price*item.qty)}</td>
+  </tr>
+ `).join('');
+
+ document.getElementById('transactionDetailContent').innerHTML=`
+  <p><b>Bill No:</b> ${escapeProductText(t.billNo)}</p>
+  <p><b>Date:</b> ${escapeProductText(t.date)}</p>
+  <p><b>Sales:</b> ${escapeProductText(t.sales)}</p>
+  <p><b>Agent:</b> ${escapeProductText(t.agent)}</p>
+  <p><b>Car Plate:</b> ${escapeProductText(t.carPlate||'-')}</p>
+
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr><th>Code</th><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+    </thead>
+    <tbody>${items}</tbody>
+   </table>
+  </div>
+
+  <p>Subtotal: <b>${rupiah(t.subtotal)}</b></p>
+  <p>Discount: <b>${rupiah(t.discount)}</b></p>
+  <h3>Grand Total: ${rupiah(t.grandTotal)}</h3>
+  <p>Payment: ${escapeProductText(t.payment)}</p>
+
+  <hr>
+  <p>Commission Mode: ${escapeProductText(t.commissionMode)}</p>
+  <p>Guide (${t.guidePercent}%): ${rupiah(t.guideAmount)}</p>
+  <p>Driver (${t.driverPercent}%): ${rupiah(t.driverAmount)}</p>
+ `;
+
+ document.getElementById('transactionDetail').hidden=false;
+ document.getElementById('transactionDetail').scrollIntoView({behavior:'smooth'});
+}
+
+function closeTransactionDetail(){
+ document.getElementById('transactionDetail').hidden=true;
+}
+
+renderTransactionHistory();
 
 </script>
 
