@@ -249,16 +249,88 @@ th{background:#f7f8fa}
 </section>
 
 
+
 <section id="stock" class="page">
  <h2>Stock Management</h2>
+
  <div class="stats">
-  <div class="stat"><small>Total Products</small><strong>0</strong></div>
-  <div class="stat"><small>Total Stock</small><strong>0 PCS</strong></div>
-  <div class="stat"><small>Low Stock</small><strong>0</strong></div>
-  <div class="stat"><small>Out of Stock</small><strong>0</strong></div>
+  <div class="stat">
+   <small>Total Products</small>
+   <strong id="stockTotalProducts">0</strong>
+  </div>
+  <div class="stat">
+   <small>Total Stock</small>
+   <strong id="stockTotalQty">0 PCS</strong>
+  </div>
+  <div class="stat">
+   <small>Low Stock</small>
+   <strong id="stockLowCount">0</strong>
+  </div>
+  <div class="stat">
+   <small>Out of Stock</small>
+   <strong id="stockOutCount">0</strong>
+  </div>
  </div>
- <div class="card"><h3>Stock In / Stock Out / Adjustment</h3></div>
+
+ <div class="card" style="margin-top:20px">
+  <h3>Stock In / Stock Out / Adjustment</h3>
+
+  <label>Select Product</label>
+  <select id="stockProduct">
+   <option value="">Select Product</option>
+  </select>
+
+  <label>Transaction Type</label>
+  <select id="stockType">
+   <option value="in">Stock In</option>
+   <option value="out">Stock Out</option>
+   <option value="adjust">Stock Adjustment</option>
+  </select>
+
+  <label>Quantity (PCS)</label>
+  <input type="number" id="stockQty" min="0" placeholder="Enter Quantity">
+
+  <label>Notes</label>
+  <input id="stockNotes" placeholder="Enter notes">
+
+  <button class="btn" onclick="saveStockMovement()">SAVE STOCK</button>
+ </div>
+
+ <div class="card">
+  <h3>Low Stock Warning</h3>
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>Item Code</th>
+      <th>Item Name</th>
+      <th>Stock</th>
+     </tr>
+    </thead>
+    <tbody id="lowStockTable"></tbody>
+   </table>
+  </div>
+ </div>
+
+ <div class="card">
+  <h3>Stock History</h3>
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>Date</th>
+      <th>Item</th>
+      <th>Type</th>
+      <th>Qty</th>
+      <th>Notes</th>
+     </tr>
+    </thead>
+    <tbody id="stockHistoryTable"></tbody>
+   </table>
+  </div>
+ </div>
 </section>
+
 
 <section id="history" class="page">
  <h2>Transaction History</h2>
@@ -489,6 +561,127 @@ function resetProductForm(){
 
 renderProducts();
  
+// JEWELRY POS - STOCK MANAGEMENT
+
+let stockHistory = JSON.parse(
+ localStorage.getItem('jewelryStockHistory') || '[]'
+);
+
+function renderStockManagement(){
+ const totalProducts = products.length;
+ const totalQty = products.reduce((sum,p)=>sum+Number(p.stock||0),0);
+ const lowStock = products.filter(p=>Number(p.stock)<=5 && Number(p.stock)>0);
+ const outStock = products.filter(p=>Number(p.stock)<=0);
+
+ document.getElementById('stockTotalProducts').textContent=totalProducts;
+ document.getElementById('stockTotalQty').textContent=totalQty+' PCS';
+ document.getElementById('stockLowCount').textContent=lowStock.length;
+ document.getElementById('stockOutCount').textContent=outStock.length;
+
+ const select=document.getElementById('stockProduct');
+ const currentValue=select.value;
+
+ select.innerHTML='<option value="">Select Product</option>'+
+ products.map(p=>
+  `<option value="${p.id}">${escapeProductText(p.code)} - ${escapeProductText(p.name)}</option>`
+ ).join('');
+
+ if(products.some(p=>p.id===currentValue)){
+  select.value=currentValue;
+ }
+
+ const lowTable=document.getElementById('lowStockTable');
+
+ if(lowStock.length===0){
+  lowTable.innerHTML='<tr><td colspan="3">No low stock products.</td></tr>';
+ }else{
+  lowTable.innerHTML=lowStock.map(p=>`
+   <tr>
+    <td>${escapeProductText(p.code)}</td>
+    <td>${escapeProductText(p.name)}</td>
+    <td>${p.stock} PCS</td>
+   </tr>
+  `).join('');
+ }
+
+ const historyTable=document.getElementById('stockHistoryTable');
+
+ if(stockHistory.length===0){
+  historyTable.innerHTML='<tr><td colspan="5">No stock history yet.</td></tr>';
+ }else{
+  historyTable.innerHTML=stockHistory.slice().reverse().map(h=>`
+   <tr>
+    <td>${escapeProductText(h.date)}</td>
+    <td>${escapeProductText(h.item)}</td>
+    <td>${escapeProductText(h.type)}</td>
+    <td>${h.qty} PCS</td>
+    <td>${escapeProductText(h.notes||'-')}</td>
+   </tr>
+  `).join('');
+ }
+}
+
+function saveStockMovement(){
+ const productId=document.getElementById('stockProduct').value;
+ const type=document.getElementById('stockType').value;
+ const qty=Number(document.getElementById('stockQty').value);
+ const notes=document.getElementById('stockNotes').value.trim();
+
+ const product=products.find(p=>p.id===productId);
+
+ if(!product){
+  alert('Please select a product.');
+  return;
+ }
+
+ if(!Number.isInteger(qty)||qty<=0){
+  alert('Please enter a valid quantity.');
+  return;
+ }
+
+ const oldStock=Number(product.stock)||0;
+
+ if(type==='in'){
+  product.stock=oldStock+qty;
+ }
+
+ if(type==='out'){
+  product.stock=oldStock-qty;
+ }
+
+ if(type==='adjust'){
+  product.stock=qty;
+ }
+
+ const typeName={
+  in:'Stock In',
+  out:'Stock Out',
+  adjust:'Adjustment'
+ }[type];
+
+ stockHistory.push({
+  date:new Date().toLocaleString('id-ID'),
+  productId:product.id,
+  item:product.code+' - '+product.name,
+  type:typeName,
+  qty:type==='adjust'?`${oldStock} → ${qty}`:qty,
+  notes
+ });
+
+ localStorage.setItem('jewelryProducts',JSON.stringify(products));
+ localStorage.setItem('jewelryStockHistory',JSON.stringify(stockHistory));
+
+ document.getElementById('stockQty').value='';
+ document.getElementById('stockNotes').value='';
+
+ renderProducts();
+ renderStockManagement();
+
+ alert('Stock updated successfully.');
+}
+
+renderStockManagement();
+
 </script>
 
 </body>
