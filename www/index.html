@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101b32">
+<title>Jewelry POS</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ font-family:Arial,sans-serif;
+ background:#f4f5f8;
+ color:#263247;
+}
+.topbar{
+ position:fixed;
+ top:0;left:0;right:0;
+ height:65px;
+ background:#101b32;
+ color:white;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ padding:0 20px;
+ z-index:10;
+}
+.brand{
+ display:flex;
+ align-items:center;
+ gap:12px;
+ font-size:20px;
+ font-weight:bold;
+}
+.brand img{
+ width:38px;height:38px;
+ object-fit:contain;
+}
+.layout{display:flex;padding-top:65px}
+.sidebar{
+ position:fixed;
+ top:65px;bottom:0;
+ width:220px;
+ background:#17243d;
+ padding:20px 12px;
+ overflow-y:auto;
+}
+.sidebar button{
+ width:100%;
+ border:0;
+ background:transparent;
+ color:#dce3ef;
+ text-align:left;
+ padding:14px;
+ margin-bottom:5px;
+ border-radius:8px;
+ font-size:14px;
+ cursor:pointer;
+}
+.sidebar button.active,
+.sidebar button:hover{
+ background:#b58a3a;
+ color:white;
+}
+main{
+ margin-left:220px;
+ padding:25px;
+ width:calc(100% - 220px);
+ min-height:calc(100vh - 65px);
+}
+.page{display:none}
+.page.active{display:block}
+h2{margin-top:0}
+.card{
+ background:white;
+ border-radius:12px;
+ padding:18px;
+ margin-bottom:18px;
+ box-shadow:0 3px 12px #17243d0c;
+}
+.stats{
+ display:grid;
+ grid-template-columns:repeat(4,1fr);
+ gap:15px;
+}
+.stat{
+ background:white;
+ border-radius:12px;
+ padding:18px;
+ border-left:4px solid #b58a3a;
+}
+.stat small{color:#758096}
+.stat strong{display:block;font-size:21px;margin-top:10px}
+input,select{
+ width:100%;
+ padding:12px;
+ border:1px solid #dce1e9;
+ border-radius:8px;
+ margin:7px 0 14px;
+ font-size:14px;
+}
+label{font-size:13px;font-weight:bold}
+.btn{
+ border:0;
+ padding:12px 18px;
+ border-radius:8px;
+ background:#b58a3a;
+ color:white;
+ font-weight:bold;
+ cursor:pointer;
+}
+.btn.dark{background:#17243d}
+table{width:100%;border-collapse:collapse}
+th,td{
+ padding:12px;
+ text-align:left;
+ border-bottom:1px solid #edf0f4;
+ font-size:13px;
+}
+th{background:#f7f8fa}
+@media(max-width:700px){
+ .sidebar{width:65px;padding:10px 5px}
+ .sidebar button{font-size:0;text-align:center;padding:14px 3px}
+ .sidebar button::first-letter{font-size:17px}
+ main{margin-left:65px;width:calc(100% - 65px);padding:14px}
+ .stats{grid-template-columns:repeat(2,1fr)}
+ .brand{font-size:16px}
+}
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+ <div class="brand">
+  <img id="topLogo" alt="Logo" hidden>
+  <span id="topStoreName">JEWELRY POS</span>
+ </div>
+ <span>Owner / Cashier</span>
+</header>
+
+<div class="layout">
+<nav class="sidebar">
+ <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
+ <button onclick="showPage('cashier',this)">🛒 Kasir</button>
+ <button onclick="showPage('products',this)">💎 Data Barang</button>
+ <button onclick="showPage('stock',this)">📦 Management Stock</button>
+ <button onclick="showPage('history',this)">📋 Riwayat</button>
+ <button onclick="showPage('reports',this)">📊 Laporan</button>
+ <button onclick="showPage('agents',this)">👥 Data Agent</button>
+ <button onclick="showPage('settings',this)">⚙️ Settings</button>
+</nav>
+
+<main>
+
+<section id="dashboard" class="page active">
+ <h2>Dashboard</h2>
+ <div class="stats">
+  <div class="stat"><small>Total Transactions</small><strong>0</strong></div>
+  <div class="stat"><small>Total Sales</small><strong>Rp 0</strong></div>
+  <div class="stat"><small>Total Products</small><strong>0</strong></div>
+  <div class="stat"><small>Low Stock</small><strong>0</strong></div>
+ </div>
+ <div class="card" style="margin-top:20px">
+  <h3>Welcome to Jewelry POS</h3>
+  <p>Jewelry Store Management System</p>
+ </div>
+</section>
+
+<section id="cashier" class="page">
+ <h2>New Bill</h2>
+ <div class="card">
+  <label>Bill No.</label><input placeholder="Automatic Bill Number" disabled>
+  <label>Date</label><input type="date" id="billDate">
+  <label>Sales Name</label><input placeholder="Enter Sales Name">
+  <label>Agent</label><select><option>Select Agent</option></select>
+  <label>Car Plate No.</label><input placeholder="Enter Car Plate Number">
+ </div>
+ <div class="card">
+  <h3>Add Item</h3>
+  <label>Item Code / Item Name</label>
+  <input placeholder="Search item code or name">
+  <label>Quantity (PCS)</label><input type="number" min="1" value="1">
+  <button class="btn">ADD ITEM</button>
+ </div>
+ <div class="card">
+  <h3>Order Summary</h3>
+  <p>Subtotal: Rp 0</p>
+  <p>Discount: Rp 0</p>
+  <h2>Grand Total: Rp 0</h2>
+  <button class="btn">SAVE TRANSACTION</button>
+ </div>
+</section>
+
+<section id="products" class="page">
+ <h2>Product Management</h2>
+ <div class="card">
+  <label>Item Code</label><input placeholder="Enter Item Code">
+  <label>Item Name</label><input placeholder="Enter Item Name">
+  <label>Category</label><input placeholder="Enter Category">
+  <label>Selling Price</label><input type="number" placeholder="Selling Price">
+  <label>Stock (PCS)</label><input type="number" placeholder="Stock">
+  <button class="btn">SAVE PRODUCT</button>
+ </div>
+ <div class="card"><h3>Product List</h3></div>
+</section>
+
+<section id="stock" class="page">
+ <h2>Stock Management</h2>
+ <div class="stats">
+  <div class="stat"><small>Total Products</small><strong>0</strong></div>
+  <div class="stat"><small>Total Stock</small><strong>0 PCS</strong></div>
+  <div class="stat"><small>Low Stock</small><strong>0</strong></div>
+  <div class="stat"><small>Out of Stock</small><strong>0</strong></div>
+ </div>
+ <div class="card"><h3>Stock In / Stock Out / Adjustment</h3></div>
+</section>
+
+<section id="history" class="page">
+ <h2>Transaction History</h2>
+ <div class="card"><p>No transactions yet.</p></div>
+</section>
+
+<section id="reports" class="page">
+ <h2>Sales Reports</h2>
+ <div class="card">
+  <label>From Date</label><input type="date">
+  <label>To Date</label><input type="date">
+  <label>Agent</label><select><option>All Agents</option></select>
+  <label>Sales</label><select><option>All Sales</option></select>
+  <button class="btn">VIEW REPORT</button>
+  <button class="btn dark">SAVE AS PDF</button>
+ </div>
+ <div class="card"><h3>Report Summary</h3></div>
+</section>
+
+<section id="agents" class="page">
+ <h2>Agent Management</h2>
+ <div class="card">
+  <label>Agent Name</label><input placeholder="Enter Agent Name">
+  <button class="btn">SAVE AGENT</button>
+ </div>
+</section>
+
+<section id="settings" class="page">
+ <h2>Settings</h2>
+ <div class="card">
+  <h3>Store Profile</h3>
+  <label>Store Name</label>
+  <input id="storeNameInput" placeholder="Enter Store Name">
+  <label>Upload Store Logo</label>
+  <input id="logoInput" type="file" accept="image/*">
+  <button class="btn" onclick="saveStore()">SAVE STORE PROFILE</button>
+ </div>
+ <div class="card">
+  <h3>Security & PIN</h3>
+  <label>Owner PIN</label><input type="password" placeholder="Change Owner PIN">
+  <label>Cashier PIN</label><input type="password" placeholder="Change Cashier PIN">
+ </div>
+ <div class="card">
+  <h3>Backup & Restore</h3>
+  <button class="btn dark">BACKUP DATA</button>
+  <input type="file" accept=".json">
+  <button class="btn">RESTORE DATA</button>
+ </div>
+ <div class="card">
+  <h3>Printer Settings</h3>
+  <p>Printer 1 - Customer Receipt (80mm)</p>
+  <p>Printer 2 - Internal Receipt (80mm)</p>
+ </div>
+</section>
+
+</main>
+</div>
+
+<script>
+function showPage(id,button){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
+ button.classList.add('active');
+}
+
+function saveStore(){
+ const name=document.getElementById('storeNameInput').value.trim();
+ if(name){
+  localStorage.setItem('jewelryStoreName',name);
+  document.getElementById('topStoreName').textContent=name;
+ }
+ alert('Store profile saved');
+}
+
+document.getElementById('billDate').value=new Date().toISOString().slice(0,10);
+
+const savedName=localStorage.getItem('jewelryStoreName');
+if(savedName){
+ document.getElementById('topStoreName').textContent=savedName;
+ document.getElementById('storeNameInput').value=savedName;
+}
+
+document.getElementById('logoInput').addEventListener('change',function(e){
+ const file=e.target.files[0];
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=function(){
+  localStorage.setItem('jewelryStoreLogo',reader.result);
+  const logo=document.getElementById('topLogo');
+  logo.src=reader.result;
+  logo.hidden=false;
+ };
+ reader.readAsDataURL(file);
+});
+
+const savedLogo=localStorage.getItem('jewelryStoreLogo');
+if(savedLogo){
+ const logo=document.getElementById('topLogo');
+ logo.src=savedLogo;
+ logo.hidden=false;
+}
+</script>
+
+</body>
+</html>
