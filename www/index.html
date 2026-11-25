@@ -699,11 +699,33 @@ th{background:#f7f8fa}
  </button>
 </div>
 
- <div class="card">
-  <h3>Printer Settings</h3>
-  <p>Printer 1 - Customer Receipt (80mm)</p>
-  <p>Printer 2 - Internal Receipt (80mm)</p>
- </div>
+ 
+<div class="card">
+ <h3>Printer 1 - Customer Receipt</h3>
+
+ <label>Paper Width</label>
+ <select id="printer1Width">
+  <option value="58">58 mm</option>
+  <option value="80" selected>80 mm</option>
+ </select>
+
+ <p>Bluetooth Printer</p>
+ <p id="printer1Status">Not Connected</p>
+</div>
+
+<div class="card">
+ <h3>Printer 2 - Internal Receipt</h3>
+
+ <label>Paper Width</label>
+ <select id="printer2Width">
+  <option value="58">58 mm</option>
+  <option value="80" selected>80 mm</option>
+ </select>
+
+ <p>Bluetooth Printer</p>
+ <p id="printer2Status">Not Connected</p>
+</div>
+
 </section>
 
 </main>
@@ -1952,6 +1974,26 @@ function restoreJewelryData(){
 
     reader.readAsText(file);
 }
+
+function savePrinterSettings(){
+    const width1 = document.getElementById('printer1Width').value;
+    const width2 = document.getElementById('printer2Width').value;
+
+    localStorage.setItem('jewelryPrinter1Width', width1);
+    localStorage.setItem('jewelryPrinter2Width', width2);
+
+    alert('Printer settings saved successfully.');
+}
+
+function loadPrinterSettings(){
+    const width1 = localStorage.getItem('jewelryPrinter1Width') || '80';
+    const width2 = localStorage.getItem('jewelryPrinter2Width') || '80';
+
+    document.getElementById('printer1Width').value = width1;
+    document.getElementById('printer2Width').value = width2;
+}
+
+loadPrinterSettings();
 
 </script>
 
