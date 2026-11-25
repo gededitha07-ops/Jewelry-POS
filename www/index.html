@@ -154,19 +154,38 @@ th{background:#f7f8fa}
 
 <main>
 
+
 <section id="dashboard" class="page active">
  <h2>Dashboard</h2>
+
  <div class="stats">
-  <div class="stat"><small>Total Transactions</small><strong>0</strong></div>
-  <div class="stat"><small>Total Sales</small><strong>Rp 0</strong></div>
-  <div class="stat"><small>Total Products</small><strong>0</strong></div>
-  <div class="stat"><small>Low Stock</small><strong>0</strong></div>
+  <div class="stat">
+   <small>Total Transactions</small>
+   <strong id="dashTransactions">0</strong>
+  </div>
+
+  <div class="stat">
+   <small>Total Sales</small>
+   <strong id="dashSales">Rp 0</strong>
+  </div>
+
+  <div class="stat">
+   <small>Total Products</small>
+   <strong id="dashProducts">0</strong>
+  </div>
+
+  <div class="stat">
+   <small>Low Stock</small>
+   <strong id="dashLowStock">0</strong>
+  </div>
  </div>
+
  <div class="card" style="margin-top:20px">
   <h3>Welcome to Jewelry POS</h3>
   <p>Jewelry Store Management System</p>
  </div>
 </section>
+
 
 <section id="cashier" class="page">
  <h2>New Bill</h2>
@@ -482,6 +501,7 @@ function saveProduct(){
  localStorage.setItem('jewelryProducts',JSON.stringify(products));
  resetProductForm();
  renderProducts();
+ updateDashboard();
  alert('Product saved successfully.');
 }
 
@@ -547,6 +567,7 @@ function deleteProduct(id){
  products=products.filter(p=>p.id!==id);
  localStorage.setItem('jewelryProducts',JSON.stringify(products));
  renderProducts();
+ updateDashboard();
 }
 
 function resetProductForm(){
@@ -676,11 +697,28 @@ function saveStockMovement(){
 
  renderProducts();
  renderStockManagement();
+ updateDashboard();
 
  alert('Stock updated successfully.');
 }
 
 renderStockManagement();
+
+function updateDashboard(){
+ const totalProducts=products.length;
+
+ const lowStock=products.filter(p=>
+  Number(p.stock)<=5 && Number(p.stock)>0
+ ).length;
+
+ document.getElementById('dashProducts').textContent=totalProducts;
+ document.getElementById('dashLowStock').textContent=lowStock;
+
+ document.getElementById('dashTransactions').textContent=0;
+ document.getElementById('dashSales').textContent='Rp 0';
+}
+
+updateDashboard();
 
 </script>
 
