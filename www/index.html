@@ -586,11 +586,33 @@ th{background:#f7f8fa}
  </button>
 </div>
 
- <div class="card">
-  <h3>Security & PIN</h3>
-  <label>Owner PIN</label><input type="password" placeholder="Change Owner PIN">
-  <label>Cashier PIN</label><input type="password" placeholder="Change Cashier PIN">
- </div>
+<div class="card">
+ <h3>Change Owner PIN</h3>
+ <label>Current Owner PIN</label>
+ <input type="password" id="oldOwnerPin" inputmode="numeric">
+
+ <label>New Owner PIN</label>
+ <input type="password" id="newOwnerPin" inputmode="numeric">
+
+ <button class="btn" onclick="changeOwnerPin()">
+  SAVE OWNER PIN
+ </button>
+</div>
+
+<div class="card">
+ <h3>Change Cashier PIN</h3>
+ <label>Current Cashier PIN</label>
+ <input type="password" id="oldCashierPin" inputmode="numeric">
+
+ <label>New Cashier PIN</label>
+ <input type="password" id="newCashierPin" inputmode="numeric">
+
+ <button class="btn" onclick="changeCashierPin()">
+  SAVE CASHIER PIN
+ </button>
+</div>
+
+ 
  <div class="card">
   <h3>Backup & Restore</h3>
   <button class="btn dark">BACKUP DATA</button>
@@ -1441,6 +1463,54 @@ function loadCommissionSettings(){
 }
 
 loadCommissionSettings();
+
+function changeOwnerPin(){
+    const oldPin = document.getElementById('oldOwnerPin').value;
+    const newPin = document.getElementById('newOwnerPin').value;
+
+    const currentPin = localStorage.getItem('ownerPin') || '1234';
+
+    if(oldPin !== currentPin){
+        alert('Current Owner PIN is incorrect.');
+        return;
+    }
+
+    if(!/^\d{4,8}$/.test(newPin)){
+        alert('New PIN must contain 4 to 8 digits.');
+        return;
+    }
+
+    localStorage.setItem('ownerPin', newPin);
+
+    document.getElementById('oldOwnerPin').value = '';
+    document.getElementById('newOwnerPin').value = '';
+
+    alert('Owner PIN changed successfully.');
+}
+
+function changeCashierPin(){
+    const oldPin = document.getElementById('oldCashierPin').value;
+    const newPin = document.getElementById('newCashierPin').value;
+
+    const currentPin = localStorage.getItem('cashierPin') || '0000';
+
+    if(oldPin !== currentPin){
+        alert('Current Cashier PIN is incorrect.');
+        return;
+    }
+
+    if(!/^\d{4,8}$/.test(newPin)){
+        alert('New PIN must contain 4 to 8 digits.');
+        return;
+    }
+
+    localStorage.setItem('cashierPin', newPin);
+
+    document.getElementById('oldCashierPin').value = '';
+    document.getElementById('newCashierPin').value = '';
+
+    alert('Cashier PIN changed successfully.');
+}
 
 </script>
 
