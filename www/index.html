@@ -819,6 +819,28 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
 
 <section id="settings" class="page">
  <h2>Settings</h2>
+ 
+<div class="card" id="exchangeRateCard">
+ <h3>Exchange Rate Settings</h3>
+
+ <label>Base Currency</label>
+ <input type="text" value="IDR - Indonesian Rupiah" disabled>
+
+ <label>1 USD = IDR</label>
+ <input type="number" id="usdRateInput"
+        min="0.01" step="0.01"
+        placeholder="Enter USD exchange rate">
+
+ <label>1 JPY = IDR</label>
+ <input type="number" id="jpyRateInput"
+        min="0.01" step="0.01"
+        placeholder="Enter JPY exchange rate">
+
+ <button class="btn" onclick="saveExchangeRates()">
+  SAVE EXCHANGE RATES
+ </button>
+</div>
+
  <div class="card">
   <h3>Store Profile</h3>
   <label>Store Name</label>
@@ -1760,7 +1782,7 @@ function showPage(id,button){
 settingsCards.forEach(card=>{
  if(role==='cashier'){
   card.style.display=
-   ['printer1Card','printer2Card'].includes(card.id)
+   ['exchangeRateCard','printer1Card','printer2Card'].includes(card.id)
    ? ''
    : 'none';
  }else{
@@ -3200,6 +3222,32 @@ function restoreJewelryData(){
     reader.readAsText(file);
 }
 
+function saveExchangeRates(){
+
+ const usd=Number(document.getElementById('usdRateInput').value);
+ const jpy=Number(document.getElementById('jpyRateInput').value);
+
+ if(!Number.isFinite(usd)||usd<=0||
+    !Number.isFinite(jpy)||jpy<=0){
+  alert('Please enter valid USD and JPY exchange rates.');
+  return;
+ }
+
+ localStorage.setItem('jewelryUSDRate',usd);
+ localStorage.setItem('jewelryJPYRate',jpy);
+
+ alert('Exchange rates saved successfully.');
+}
+
+function loadExchangeRates(){
+
+ const usd=localStorage.getItem('jewelryUSDRate');
+ const jpy=localStorage.getItem('jewelryJPYRate');
+
+ document.getElementById('usdRateInput').value=usd||'';
+ document.getElementById('jpyRateInput').value=jpy||'';
+}
+
 
 function savePrinterSettings(){
     const width1 = document.getElementById('printer1Width').value;
@@ -3220,6 +3268,7 @@ function loadPrinterSettings(){
 }
 
 loadPrinterSettings();
+ loadExchangeRates();
 
 function loadReportFilters(){
     const agentSelect = document.getElementById('reportAgent');
