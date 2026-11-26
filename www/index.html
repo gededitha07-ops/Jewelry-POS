@@ -1770,6 +1770,12 @@ settingsCards.forEach(card=>{
 
 
 function saveStore(){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can change store profile.');
+        return;
+    }
+
     const name = document.getElementById('storeNameInput').value.trim();
 
     if(!name){
@@ -1786,6 +1792,7 @@ function saveStore(){
 
     alert('Store profile saved successfully.');
 }
+
 
 document.getElementById('billDate').value=new Date().toISOString().slice(0,10);
 
@@ -2657,6 +2664,12 @@ function closeTransactionDetail(){
 renderTransactionHistory();
 
 function saveCommissionSettings(){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can change commission settings.');
+        return;
+    }
+
     const guide = Number(
         document.getElementById('settingGuidePercent').value
     );
@@ -2681,6 +2694,7 @@ function saveCommissionSettings(){
     alert('Commission settings saved successfully.');
 }
 
+
 function loadCommissionSettings(){
     document.getElementById('settingGuidePercent').value =
         localStorage.getItem('jewelryGuidePercent') || 0;
@@ -2691,11 +2705,18 @@ function loadCommissionSettings(){
 
 loadCommissionSettings();
 
+
 function changeOwnerPin(){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can change Owner PIN.');
+        return;
+    }
+
     const oldPin = document.getElementById('oldOwnerPin').value;
     const newPin = document.getElementById('newOwnerPin').value;
 
-    const currentPin = localStorage.getItem('ownerPin') || '1234';
+    const currentPin = localStorage.getItem('jewelryOwnerPin') || '1234';
 
     if(oldPin !== currentPin){
         alert('Current Owner PIN is incorrect.');
@@ -2707,7 +2728,7 @@ function changeOwnerPin(){
         return;
     }
 
-    localStorage.setItem('ownerPin', newPin);
+    localStorage.setItem('jewelryOwnerPin', newPin);
 
     document.getElementById('oldOwnerPin').value = '';
     document.getElementById('newOwnerPin').value = '';
@@ -2715,11 +2736,19 @@ function changeOwnerPin(){
     alert('Owner PIN changed successfully.');
 }
 
+
+
 function changeCashierPin(){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can change Cashier PIN.');
+        return;
+    }
+
     const oldPin = document.getElementById('oldCashierPin').value;
     const newPin = document.getElementById('newCashierPin').value;
 
-    const currentPin = localStorage.getItem('cashierPin') || '0000';
+    const currentPin = localStorage.getItem('jewelryCashierPin') || '0000';
 
     if(oldPin !== currentPin){
         alert('Current Cashier PIN is incorrect.');
@@ -2731,7 +2760,7 @@ function changeCashierPin(){
         return;
     }
 
-    localStorage.setItem('cashierPin', newPin);
+    localStorage.setItem('jewelryCashierPin', newPin);
 
     document.getElementById('oldCashierPin').value = '';
     document.getElementById('newCashierPin').value = '';
@@ -2739,11 +2768,15 @@ function changeCashierPin(){
     alert('Cashier PIN changed successfully.');
 }
 
-let discountPresets = JSON.parse(
-    localStorage.getItem('jewelryDiscountPresets') || '[]'
-);
+
 
 function saveDiscountPreset(){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can manage discount presets.');
+        return;
+    }
+
     const name = document.getElementById('discountName').value.trim();
     const type = document.getElementById('discountType').value;
     const value = Number(document.getElementById('discountValue').value);
@@ -2783,6 +2816,7 @@ function saveDiscountPreset(){
     alert('Discount preset saved successfully.');
 }
 
+
 function renderDiscountPresets(){
     const table = document.getElementById('discountPresetTable');
 
@@ -2808,7 +2842,14 @@ function renderDiscountPresets(){
     `).join('');
 }
 
+
 function deleteDiscountPreset(id){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can delete discount presets.');
+        return;
+    }
+
     if(!confirm('Delete this discount preset?')) return;
 
     discountPresets = discountPresets.filter(item => item.id !== id);
@@ -2822,6 +2863,7 @@ function deleteDiscountPreset(id){
 }
 
 renderDiscountPresets();
+
 
 function renderBillDiscountPresets(){
     const select = document.getElementById('billDiscountPreset');
@@ -2871,6 +2913,12 @@ let salesNames = JSON.parse(
 );
 
 function saveSalesName(){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can manage Sales Names.');
+        return;
+    }
+
     const input = document.getElementById('salesNameInput');
     const name = input.value.trim();
 
@@ -2966,7 +3014,14 @@ function editSalesName(id){
     renderSalesNames();
 }
 
+
 function deleteSalesName(id){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can delete Sales Names.');
+        return;
+    }
+
     if(!confirm('Delete this Sales Name?')) return;
 
     salesNames = salesNames.filter(s => s.id !== id);
@@ -2980,6 +3035,7 @@ function deleteSalesName(id){
 }
 
 renderSalesNames();
+
 
 function renderSalesNameOptions(){
     const select = document.getElementById('salesName');
@@ -2998,7 +3054,14 @@ function renderSalesNameOptions(){
         `).join('');
 }
 
+
 function backupJewelryData(){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can backup Jewelry POS data.');
+        return;
+    }
+
     const backup = {
         app: 'Jewelry POS',
         version: 1,
@@ -3032,7 +3095,14 @@ function backupJewelryData(){
     alert('Backup file created successfully.');
 }
 
+
 function restoreJewelryData(){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can restore Jewelry POS data.');
+        return;
+    }
+
     const fileInput = document.getElementById('restoreFile');
     const file = fileInput.files[0];
 
@@ -3089,6 +3159,7 @@ function restoreJewelryData(){
 
     reader.readAsText(file);
 }
+
 
 function savePrinterSettings(){
     const width1 = document.getElementById('printer1Width').value;
