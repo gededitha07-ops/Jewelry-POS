@@ -3853,6 +3853,10 @@ function logout(){
  function printCustomerReceipt(bill){
 
  const storeName=localStorage.getItem('jewelryStoreName')||'Jewelry POS';
+  const storeLogo=localStorage.getItem('jewelryLogo')||'';
+const logoHTML=storeLogo
+ ? `<img src="${storeLogo}" style="max-width:100px;max-height:70px;display:block;margin:auto;">`
+ : '';
 
  let items=(bill.items||[]).map(item=>`
   <tr>
@@ -3866,7 +3870,8 @@ function logout(){
 
  const receipt=`
   <div class="receipt">
-   <h2>${storeName}</h2>
+   ${logoHTML}
+<h2>${storeName}</h2>
    <h3>CUSTOMER RECEIPT</h3>
    <p>Bill No: ${bill.billNo}</p>
    <p>Date: ${bill.date}</p>
@@ -3903,6 +3908,10 @@ function logout(){
  function printInternalReceipt(bill){
 
  const storeName=localStorage.getItem('jewelryStoreName')||'Jewelry POS';
+  const storeLogo=localStorage.getItem('jewelryLogo')||'';
+const logoHTML=storeLogo
+ ? `<img src="${storeLogo}" style="max-width:100px;max-height:70px;display:block;margin:auto;">`
+ : '';
 
  let items=(bill.items||[]).map(item=>`
   <tr>
@@ -3916,7 +3925,8 @@ function logout(){
 
  const receipt=`
   <div class="receipt">
-   <h2>${storeName}</h2>
+   ${logoHTML}
+<h2>${storeName}</h2>
    <h3>INTERNAL RECEIPT</h3>
    <p>Bill No: ${bill.billNo}</p>
    <p>Date: ${bill.date}</p>
