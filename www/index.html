@@ -449,6 +449,34 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
    <option value="Bank Transfer">Bank Transfer</option>
    <option value="QRIS">QRIS</option>
   </select>
+  
+<hr>
+<h3>Mixed Currency Payment</h3>
+
+<label>Payment in IDR (Rp)</label>
+<input type="number" id="paidIDR"
+       min="0" step="1" value="0"
+       oninput="updateMixedPaymentSummary()">
+
+<label>Payment in USD ($)</label>
+<input type="number" id="paidUSD"
+       min="0" step="0.01" value="0"
+       oninput="updateMixedPaymentSummary()">
+
+<p>USD Exchange Rate: <strong id="currentUSDRate">Not Set</strong></p>
+
+<label>Payment in JPY (¥)</label>
+<input type="number" id="paidJPY"
+       min="0" step="1" value="0"
+       oninput="updateMixedPaymentSummary()">
+
+<p>JPY Exchange Rate: <strong id="currentJPYRate">Not Set</strong></p>
+
+<hr>
+
+<p>Total Paid (IDR): <strong id="totalPaidIDR">Rp 0</strong></p>
+<p>Shortfall / Change: <strong id="paymentDifference">Rp 0</strong></p>
+
  </div>
 
  <div class="card">
@@ -2491,6 +2519,7 @@ function updateBillTotal(){
 
  document.getElementById('driverAmount').textContent=
   rupiah(grandTotal*rates.driver/100);
+  updateMixedPaymentSummary();
 }
 
 function saveTransaction(){
@@ -2531,6 +2560,47 @@ function saveTransaction(){
  }
 
  const grandTotal=subtotal-discount;
+ 
+ const paidIDR=Number(document.getElementById('paidIDR').value)||0;
+ const paidUSD=Number(document.getElementById('paidUSD').value)||0;
+ const paidJPY=Number(document.getElementById('paidJPY').value)||0;
+
+ const usdRate=Number(localStorage.getItem('jewelryUSDRate'))||0;
+ const jpyRate=Number(localStorage.getItem('jewelryJPYRate'))||0;
+
+ if(paidIDR<0||paidUSD<0||paidJPY<0){
+  alert('Payment amounts cannot be negative.');
+  return;
+ }
+
+ if(paidUSD>0&&usdRate<=0){
+  alert('Please set a valid USD exchange rate.');
+  return;
+ }
+
+ if(paidJPY>0&&jpyRate<=0){
+  alert('Please set a valid JPY exchange rate.');
+  return;
+ }
+
+ const totalPaidIDR=paidIDR+(paidUSD*usdRate)+(paidJPY*jpyRate);
+ const paymentDifference=totalPaidIDR-grandTotal;
+
+ if(paymentDifference<0){
+  alert('Payment is insufficient. Please complete the payment.');
+  return;
+ }
+
+ const paymentDetails={
+  IDR:paidIDR,
+  USD:paidUSD,
+  JPY:paidJPY,
+  usdRate,
+  jpyRate,
+  totalPaidIDR,
+  changeIDR:paymentDifference
+ };
+
  const guideAmount=grandTotal*rates.guide/100;
  const driverAmount=grandTotal*rates.driver/100;
 
@@ -2547,6 +2617,7 @@ function saveTransaction(){
   discount,
   grandTotal,
   payment,
+  paymentDetails,
   commissionMode:document.getElementById('commissionMode').value,
   guidePercent:rates.guide,
   guideAmount,
@@ -2671,6 +2742,21 @@ function viewTransaction(id){
  if(!t)return;
 
  let items=(t.items||[]).map(item=>`
+ 
+ const pd=t.paymentDetails;
+
+ const paymentBreakdown=pd ? `
+  <hr>
+  <h4>Payment Breakdown</h4>
+  <p>IDR: ${rupiah(pd.IDR)}</p>
+  <p>USD: $${Number(pd.USD).toFixed(2)}</p>
+  <p>USD Rate: ${rupiah(pd.usdRate)}</p>
+  <p>JPY: ¥${Number(pd.JPY).toFixed(2)}</p>
+  <p>JPY Rate: ${rupiah(pd.jpyRate)}</p>
+  <p>Total Paid: <b>${rupiah(pd.totalPaidIDR)}</b></p>
+  <p>Change: <b>${rupiah(pd.changeIDR)}</b></p>
+ ` : `<p>Payment: ${escapeProductText(t.payment||'-')}</p>`;
+
   <tr>
    <td>${escapeProductText(item.code)}</td>
    <td>${escapeProductText(item.name)}</td>
@@ -2699,7 +2785,7 @@ function viewTransaction(id){
   <p>Subtotal: <b>${rupiah(t.subtotal)}</b></p>
   <p>Discount: <b>${rupiah(t.discount)}</b></p>
   <h3>Grand Total: ${rupiah(t.grandTotal)}</h3>
-  <p>Payment: ${escapeProductText(t.payment)}</p>
+  ${paymentBreakdown}
 
   <hr>
   <p>Commission Mode: ${escapeProductText(t.commissionMode||'-')}</p>
@@ -3246,6 +3332,38 @@ function loadExchangeRates(){
 
  document.getElementById('usdRateInput').value=usd||'';
  document.getElementById('jpyRateInput').value=jpy||'';
+}
+
+function updateMixedPaymentSummary(){
+
+ const usdRate=Number(localStorage.getItem('jewelryUSDRate'))||0;
+ const jpyRate=Number(localStorage.getItem('jewelryJPYRate'))||0;
+
+ const paidIDR=Number(document.getElementById('paidIDR').value)||0;
+ const paidUSD=Number(document.getElementById('paidUSD').value)||0;
+ const paidJPY=Number(document.getElementById('paidJPY').value)||0;
+
+ const grandTotal=Math.max(0,
+  getBillSubtotal()-
+  (Number(document.getElementById('billDiscount').value)||0)
+ );
+
+ const totalPaid=paidIDR+(paidUSD*usdRate)+(paidJPY*jpyRate);
+ const difference=totalPaid-grandTotal;
+
+ document.getElementById('currentUSDRate').textContent=
+  usdRate?rupiah(usdRate):'Not Set';
+
+ document.getElementById('currentJPYRate').textContent=
+  jpyRate?rupiah(jpyRate):'Not Set';
+
+ document.getElementById('totalPaidIDR').textContent=
+  rupiah(totalPaid);
+
+ document.getElementById('paymentDifference').textContent=
+  difference>=0
+   ?'Change: '+rupiah(difference)
+   :'Shortfall: '+rupiah(Math.abs(difference));
 }
 
 
