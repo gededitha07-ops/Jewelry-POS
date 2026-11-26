@@ -3554,8 +3554,11 @@ const convertedPayment = filtered.reduce(
                     <th>Agent</th>
                     <th>Car Plate</th>
                     <th>Discount</th>
-                    <th>Grand Total</th>
-                    <th>Payment</th>
+                   <th>Grand Total</th>
+                   <th>Payment</th>
+                   <th>IDR Paid</th>
+                   <th>USD Paid</th>
+                   <th>JPY Paid</th> 
                 </tr>
             </thead>
             <tbody>
@@ -3568,7 +3571,10 @@ const convertedPayment = filtered.reduce(
                         <td>${escapeProductText(t.carPlate || '-')}</td>
                         <td>${rupiah(t.discount)}</td>
                         <td>${rupiah(t.grandTotal)}</td>
-                        <td>${escapeProductText(t.payment)}</td>
+<td>${escapeProductText(t.payment||'-')}</td>
+<td>${rupiah(t.paymentDetails?.IDR||0)}</td>
+<td>$${Number(t.paymentDetails?.USD||0).toFixed(2)}</td>
+<td>¥${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
                     </tr>
                 `).join('')}
             </tbody>
