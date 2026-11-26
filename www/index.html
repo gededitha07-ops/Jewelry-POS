@@ -3971,6 +3971,11 @@ function printBothReceipts(bill){
 
 }
  function printReceiptContent(content,title){
+  const paperWidth = title==='Customer Receipt'
+ ? (localStorage.getItem('jewelryPrinter1Width')||'80')
+ : (localStorage.getItem('jewelryPrinter2Width')||'80');
+
+const paperSize = paperWidth==='58' ? '48mm' : '72mm';
 
  const printWindow=window.open(
   '',
@@ -3993,11 +3998,14 @@ function printBothReceipts(bill){
    <title>${title}</title>
    <style>
     body{
-     font-family:Arial,sans-serif;
-     font-size:12px;
-     padding:10px;
-     color:#000;
-    }
+ font-family:Arial,sans-serif;
+ font-size:12px;
+ width:${paperSize};
+ margin:0;
+ padding:5px;
+ color:#000;
+ box-sizing:border-box;
+}
     h2,h3,h4,p{
      text-align:center;
     }
