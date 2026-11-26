@@ -3850,7 +3850,174 @@ function logout(){
  document.querySelector('.sidebar button').classList.add('active');
 }
 
- 
+ function printCustomerReceipt(bill){
+
+ const storeName=localStorage.getItem('jewelryStoreName')||'Jewelry POS';
+
+ let items=(bill.items||[]).map(item=>`
+  <tr>
+   <td>${item.name}</td>
+   <td>${item.qty}</td>
+   <td>${rupiah(item.price*item.qty)}</td>
+  </tr>
+ `).join('');
+
+ const pd=bill.paymentDetails||{};
+
+ const receipt=`
+  <div class="receipt">
+   <h2>${storeName}</h2>
+   <h3>CUSTOMER RECEIPT</h3>
+   <p>Bill No: ${bill.billNo}</p>
+   <p>Date: ${bill.date}</p>
+   <p>Sales: ${bill.sales}</p>
+   <p>Agent: ${bill.agent}</p>
+   <p>Car Plate: ${bill.carPlate||'-'}</p>
+   <hr>
+   <table>
+    <tr><th>Item</th><th>Qty</th><th>Total</th></tr>
+    ${items}
+   </table>
+   <hr>
+   <p>Subtotal: ${rupiah(bill.subtotal)}</p>
+   <p>Discount: ${rupiah(bill.discount)}</p>
+   <h3>Grand Total: ${rupiah(bill.grandTotal)}</h3>
+   <hr>
+   <h4>Payment Breakdown</h4>
+   <p>IDR: ${rupiah(pd.IDR||0)}</p>
+   <p>USD: $${Number(pd.USD||0).toFixed(2)}</p>
+   <p>USD Rate: ${rupiah(pd.usdRate||0)}</p>
+   <p>JPY: ¥${Number(pd.JPY||0).toFixed(2)}</p>
+   <p>JPY Rate: ${rupiah(pd.jpyRate||0)}</p>
+   <p>Total Paid: ${rupiah(pd.totalPaidIDR||0)}</p>
+   <p>Change: ${rupiah(pd.changeIDR||0)}</p>
+   <p>Payment Method: ${bill.payment||'-'}</p>
+   <hr>
+   <p>Thank you for your purchase!</p>
+  </div>
+ `;
+
+ printReceiptContent(receipt,'Customer Receipt');
+}
+
+ function printInternalReceipt(bill){
+
+ const storeName=localStorage.getItem('jewelryStoreName')||'Jewelry POS';
+
+ let items=(bill.items||[]).map(item=>`
+  <tr>
+   <td>${item.name}</td>
+   <td>${item.qty}</td>
+   <td>${rupiah(item.price*item.qty)}</td>
+  </tr>
+ `).join('');
+
+ const pd=bill.paymentDetails||{};
+
+ const receipt=`
+  <div class="receipt">
+   <h2>${storeName}</h2>
+   <h3>INTERNAL RECEIPT</h3>
+   <p>Bill No: ${bill.billNo}</p>
+   <p>Date: ${bill.date}</p>
+   <p>Sales: ${bill.sales}</p>
+   <p>Agent: ${bill.agent}</p>
+   <p>Car Plate: ${bill.carPlate||'-'}</p>
+   <hr>
+   <table>
+    <tr><th>Item</th><th>Qty</th><th>Total</th></tr>
+    ${items}
+   </table>
+   <hr>
+   <p>Subtotal: ${rupiah(bill.subtotal)}</p>
+   <p>Discount: ${rupiah(bill.discount)}</p>
+   <h3>Grand Total: ${rupiah(bill.grandTotal)}</h3>
+   <hr>
+   <h4>Payment Breakdown</h4>
+   <p>IDR: ${rupiah(pd.IDR||0)}</p>
+   <p>USD: $${Number(pd.USD||0).toFixed(2)}</p>
+   <p>JPY: ¥${Number(pd.JPY||0).toFixed(2)}</p>
+   <p>Total Paid: ${rupiah(pd.totalPaidIDR||0)}</p>
+   <p>Change: ${rupiah(pd.changeIDR||0)}</p>
+   <hr>
+   <p>Commission Mode: ${bill.commissionMode||'-'}</p>
+   <p>Guide (${Number(bill.guidePercent||0)}%): ${rupiah(bill.guideAmount||0)}</p>
+   <p>Driver (${Number(bill.driverPercent||0)}%): ${rupiah(bill.driverAmount||0)}</p>
+   <h3>Total Commission: ${rupiah(
+    Number(bill.guideAmount||0)+Number(bill.driverAmount||0)
+   )}</h3>
+  </div>
+ `;
+
+ printReceiptContent(receipt,'Internal Receipt');
+}
+function printBothReceipts(bill){
+
+ printCustomerReceipt(bill);
+
+ setTimeout(()=>{
+  printInternalReceipt(bill);
+ },1000);
+
+}
+ function printReceiptContent(content,title){
+
+ const printWindow=window.open(
+  '',
+  '_blank',
+  'width=400,height=600'
+ );
+
+ if(!printWindow){
+  alert('Unable to open print window. Please allow pop-ups.');
+  return;
+ }
+
+ printWindow.document.open();
+
+ printWindow.document.write(`
+  <!DOCTYPE html>
+  <html>
+  <head>
+   <meta charset="UTF-8">
+   <title>${title}</title>
+   <style>
+    body{
+     font-family:Arial,sans-serif;
+     font-size:12px;
+     padding:10px;
+     color:#000;
+    }
+    h2,h3,h4,p{
+     text-align:center;
+    }
+    table{
+     width:100%;
+     border-collapse:collapse;
+    }
+    th,td{
+     padding:5px 2px;
+     text-align:left;
+     border-bottom:1px dashed #999;
+    }
+    @page{
+     margin:3mm;
+    }
+   </style>
+  </head>
+  <body>
+   ${content}
+  </body>
+  </html>
+ `);
+
+ printWindow.document.close();
+
+ printWindow.onload=function(){
+  printWindow.focus();
+  printWindow.print();
+ };
+}
 </script>
 
 </body>
