@@ -228,7 +228,7 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
 } 
 </style>
 </head>
-
+ 
 <body>
 
 <header class="topbar">
@@ -238,8 +238,6 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  </div>
  <span>Owner / Cashier</span>
 </header>
-
-<body>
 
 <div id="loginScreen" style="
  position:fixed;
@@ -291,7 +289,6 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  </div>
 </div>
 
-<div class="layout">
 <nav class="sidebar">
  <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
  <button onclick="showPage('cashier',this)">🛒 Kasir</button>
@@ -301,6 +298,9 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  <button onclick="showPage('reports',this)">📊 Laporan</button>
  <button onclick="showPage('agents',this)">👥 Data Agent</button>
  <button onclick="showPage('settings',this)">⚙️ Settings</button>
+<button onclick="logout()" style="margin-top:20px;background:#8b2635;color:white;">
+ 🚪 LOGOUT
+</button>
 </nav>
 
 <main>
@@ -979,14 +979,795 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
 
 </main>
 </div>
+<header class="topbar">
+ <div class="brand">
+  <img id="topLogo" alt="Logo" hidden>
+  <span id="topStoreName">JEWELRY POS</span>
+ </div>
+ <span id="loginUserLabel">Not Logged In</span>
+</header>
+
+<body>
+
+<div id="loginScreen" style="
+ position:fixed;
+ inset:0;
+ background:#101b32;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ z-index:9999;
+ padding:20px;
+">
+ <div style="
+  background:white;
+  width:100%;
+  max-width:380px;
+  padding:30px;
+  border-radius:16px;
+  text-align:center;
+ ">
+  <h2 style="color:#101b32;margin-bottom:8px;">
+   JEWELRY POS
+  </h2>
+
+  <p style="color:#758096;margin-bottom:25px;">
+   Jewelry Store Management System
+  </p>
+
+  <label>Select Login</label>
+  <select id="loginRole">
+   <option value="owner">OWNER</option>
+   <option value="cashier">CASHIER</option>
+  </select>
+
+  <label>Enter PIN</label>
+  <input
+   type="password"
+   id="loginPin"
+   inputmode="numeric"
+   placeholder="Enter your PIN"
+  >
+
+  <button class="btn" style="width:100%" onclick="login()">
+   LOGIN
+  </button>
+
+  <p style="color:#758096;font-size:12px;margin-top:20px;">
+   Authorized Personnel Only
+  </p>
+ </div>
+</div>
+
+<nav class="sidebar">
+ <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
+ <button onclick="showPage('cashier',this)">🛒 Kasir</button>
+ <button id="menuProducts" onclick="showPage('products',this)">💎 Data Barang</button>
+ <button id="menuStock" onclick="showPage('stock',this)">📦 Management Stock</button>
+ <button onclick="showPage('history',this)">📋 Riwayat</button>
+ <button onclick="showPage('reports',this)">📊 Laporan</button>
+ <button id="menuAgents" onclick="showPage('agents',this)">👥 Data Agent</button>
+ <button onclick="showPage('settings',this)">⚙️ Settings</button>
+ <button onclick="logout()" style="margin-top:20px;background:#8b2635;color:white;">
+  🚪 LOGOUT
+ </button>
+</nav>
+
+<main>
+
+
+<section id="dashboard" class="page active">
+ <h2>Dashboard</h2>
+
+ <div class="stats">
+  <div class="stat">
+   <small>Total Transactions</small>
+   <strong id="dashTransactions">0</strong>
+  </div>
+
+  <div class="stat">
+   <small>Total Sales</small>
+   <strong id="dashSales">Rp 0</strong>
+  </div>
+
+  <div class="stat">
+   <small>Total Products</small>
+   <strong id="dashProducts">0</strong>
+  </div>
+
+  <div class="stat">
+   <small>Low Stock</small>
+   <strong id="dashLowStock">0</strong>
+  </div>
+ </div>
+
+ <div class="card" style="margin-top:20px">
+  <h3>Welcome to Jewelry POS</h3>
+  <p>Jewelry Store Management System</p>
+ </div>
+</section>
+
+
+
+<section id="cashier" class="page">
+ <h2>New Bill</h2>
+
+ <div class="card">
+  <h3>Transaction Information</h3>
+
+  <label>Bill No.</label>
+  <input id="billNo" readonly placeholder="Automatic">
+
+  <label>Date</label>
+  <input type="date" id="billDate">
+
+  
+<label>Sales Name</label>
+<select id="salesName">
+ <option value="">Select Sales Name</option>
+</select>
+
+
+  <label>Agent</label>
+  <select id="billAgent">
+   <option value="">Select Agent</option>
+  </select>
+
+  <label>Car Plate No.</label>
+  <input id="carPlate" placeholder="Enter Car Plate Number">
+ </div>
+
+ <div class="card">
+  <h3>Add Item</h3>
+
+  <label>Select Product</label>
+  <select id="billProduct">
+   <option value="">Select Product</option>
+  </select>
+
+  <label>Quantity (PCS)</label>
+  <input type="number" id="billQty" min="1" value="1">
+
+  <button class="btn" onclick="addBillItem()">ADD ITEM</button>
+
+  <hr style="border:0;border-top:1px solid #edf0f4;margin:20px 0">
+
+  <h3>Manual Item Entry</h3>
+  <p>For products not registered in Product Management.</p>
+
+  <label>Item Code</label>
+  <input id="manualItemCode" placeholder="Enter Item Code">
+
+  <label>Item Name</label>
+  <input id="manualItemName" placeholder="Enter Item Name">
+
+  <label>Selling Price (Rp)</label>
+  <input type="number" id="manualItemPrice" min="0" placeholder="Enter Price">
+
+  <label>Quantity (PCS)</label>
+  <input type="number" id="manualItemQty" min="1" value="1">
+
+  <button class="btn dark" onclick="addManualBillItem()">ADD MANUAL ITEM</button>
+ </div>
+
+ <div class="card">
+  <h3>Order Items</h3>
+
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>Item</th>
+      <th>Price</th>
+      <th>Qty</th>
+      <th>Total</th>
+      <th>Action</th>
+     </tr>
+    </thead>
+    <tbody id="billItemsTable">
+     <tr><td colspan="5">No items added.</td></tr>
+    </tbody>
+   </table>
+  </div>
+ </div>
+
+ <div class="card">
+  <h3>Payment & Discount</h3>
+
+  <label>Subtotal</label>
+  <input id="billSubtotal" value="Rp 0" readonly>
+
+<label>Select Discount Preset</label>
+<select id="billDiscountPreset">
+ <option value="">No Preset Discount</option>
+</select>
+
+<button class="btn" onclick="applyDiscountPreset()">
+ APPLY DISCOUNT
+</button>
+
+  <label>Discount (Nominal Rp)</label>
+  <input type="number" id="billDiscount" min="0" value="0">
+
+  <label>Grand Total</label>
+  <input id="billGrandTotal" value="Rp 0" readonly>
+
+  <label>Payment Method</label>
+  <select id="billPayment">
+   <option value="">Select Payment</option>
+   <option value="Cash">Cash</option>
+   <option value="Bank Transfer">Bank Transfer</option>
+   <option value="QRIS">QRIS</option>
+  </select>
+ </div>
+
+ <div class="card">
+  <h3>Commission Settings</h3>
+
+  <label>Commission Mode</label>
+  <select id="commissionMode" onchange="toggleCommissionMode()">
+   <option value="normal">NORMAL</option>
+   <option value="custom">ATUR</option>
+  </select>
+
+  <div id="customCommissionFields" hidden>
+   <label>Guide Commission (%)</label>
+   <input type="number" id="guidePercent" min="0" max="100" step="0.01" placeholder="Guide %">
+
+   <label>Driver Commission (%)</label>
+   <input type="number" id="driverPercent" min="0" max="100" step="0.01" placeholder="Driver %">
+  </div>
+
+  <p>Commission is calculated from Grand Total after discount.</p>
+ </div>
+
+ <div class="card">
+  <h3>Transaction Summary</h3>
+  <p>Guide Commission: <strong id="guideAmount">Rp 0</strong></p>
+  <p>Driver Commission: <strong id="driverAmount">Rp 0</strong></p>
+
+  <button class="btn" id="saveTransactionBtn" onclick="saveTransaction()">SAVE TRANSACTION</button>
+  <button class="btn dark" onclick="resetBill()">NEW BILL / RESET</button>
+ </div>
+</section>
+
+
+
+<section id="products" class="page">
+ <h2>Product Management</h2>
+
+ <div class="card">
+  <h3 id="productFormTitle">Add New Product</h3>
+
+  <input type="hidden" id="editProductId">
+
+  <label>Item Code</label>
+  <input id="productCode" placeholder="Enter Item Code">
+
+  <label>Item Name</label>
+  <input id="productName" placeholder="Enter Item Name">
+
+  <label>Category</label>
+  <input id="productCategory" placeholder="Enter Category">
+
+  <label>Selling Price (Rp)</label>
+  <input id="productPrice" type="number" min="0" placeholder="Enter Selling Price">
+
+  <label>Stock (PCS)</label>
+  <input id="productStock" type="number" placeholder="Enter Stock">
+
+  <button class="btn" onclick="saveProduct()">SAVE PRODUCT</button>
+  <button class="btn dark" onclick="resetProductForm()">CANCEL / RESET</button>
+ </div>
+
+ <div class="card">
+  <h3>Product List</h3>
+
+  <input id="productSearch"
+   placeholder="Search Item Code or Item Name"
+   oninput="renderProducts()">
+
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>Item Code</th>
+      <th>Item Name</th>
+      <th>Category</th>
+      <th>Price</th>
+      <th>Stock</th>
+      <th>Action</th>
+     </tr>
+    </thead>
+    <tbody id="productTable">
+     <tr><td colspan="6">No products yet.</td></tr>
+    </tbody>
+   </table>
+  </div>
+ </div>
+</section>
+
+
+
+<section id="stock" class="page">
+ <h2>Stock Management</h2>
+
+ <div class="stats">
+  <div class="stat">
+   <small>Total Products</small>
+   <strong id="stockTotalProducts">0</strong>
+  </div>
+  <div class="stat">
+   <small>Total Stock</small>
+   <strong id="stockTotalQty">0 PCS</strong>
+  </div>
+  <div class="stat">
+   <small>Low Stock</small>
+   <strong id="stockLowCount">0</strong>
+  </div>
+  <div class="stat">
+   <small>Out of Stock</small>
+   <strong id="stockOutCount">0</strong>
+  </div>
+ </div>
+
+ <div class="card" style="margin-top:20px">
+  <h3>Stock In / Stock Out / Adjustment</h3>
+
+  <label>Select Product</label>
+  <select id="stockProduct">
+   <option value="">Select Product</option>
+  </select>
+
+  <label>Transaction Type</label>
+  <select id="stockType">
+   <option value="in">Stock In</option>
+   <option value="out">Stock Out</option>
+   <option value="adjust">Stock Adjustment</option>
+  </select>
+
+  <label>Quantity (PCS)</label>
+  <input type="number" id="stockQty" min="0" placeholder="Enter Quantity">
+
+  <label>Notes</label>
+  <input id="stockNotes" placeholder="Enter notes">
+
+  <button class="btn" onclick="saveStockMovement()">SAVE STOCK</button>
+ </div>
+
+ <div class="card">
+  <h3>Low Stock Warning</h3>
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>Item Code</th>
+      <th>Item Name</th>
+      <th>Stock</th>
+     </tr>
+    </thead>
+    <tbody id="lowStockTable"></tbody>
+   </table>
+  </div>
+ </div>
+
+ <div class="card">
+  <h3>Stock History</h3>
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>Date</th>
+      <th>Item</th>
+      <th>Type</th>
+      <th>Qty</th>
+      <th>Notes</th>
+     </tr>
+    </thead>
+    <tbody id="stockHistoryTable"></tbody>
+   </table>
+  </div>
+ </div>
+</section>
+
+
+
+<section id="history" class="page">
+ <h2>Transaction History</h2>
+
+ <div class="card">
+  <label>Search Bill No. / Sales / Agent</label>
+  <input id="historySearch"
+   placeholder="Search transaction..."
+   oninput="renderTransactionHistory()">
+
+  <label>From Date</label>
+  <input type="date" id="historyFrom" onchange="renderTransactionHistory()">
+
+  <label>To Date</label>
+  <input type="date" id="historyTo" onchange="renderTransactionHistory()">
+ </div>
+
+ <div class="card">
+  <h3>Transaction List</h3>
+
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>Bill No.</th>
+      <th>Date</th>
+      <th>Sales</th>
+      <th>Agent</th>
+      <th>Grand Total</th>
+      <th>Payment</th>
+      <th>Action</th>
+     </tr>
+    </thead>
+    <tbody id="historyTable">
+     <tr><td colspan="7">No transactions yet.</td></tr>
+    </tbody>
+   </table>
+  </div>
+ </div>
+
+ <div class="card" id="transactionDetail" hidden>
+  <h3>Transaction Detail</h3>
+  <div id="transactionDetailContent"></div>
+  <button class="btn dark" onclick="closeTransactionDetail()">CLOSE</button>
+ </div>
+</section>
+
+<section id="reports" class="page">
+ <h2>Sales Reports</h2>
+
+ <div class="card">
+  <h3>Report Filter</h3>
+
+  <label>Report Type</label>
+  <select id="reportType">
+   <option value="overall">Overall Report</option>
+   <option value="daily">Daily Report</option>
+   <option value="monthly">Monthly Report</option>
+   <option value="range">Date Range Report</option>
+   <option value="agent">Agent Report</option>
+   <option value="sales">Sales Report</option>
+  </select>
+
+  <label>From Date</label>
+  <input type="date" id="reportFrom">
+
+  <label>To Date</label>
+  <input type="date" id="reportTo">
+
+  <label>Agent</label>
+  <select id="reportAgent">
+   <option value="">All Agents</option>
+  </select>
+
+  <label>Sales</label>
+  <select id="reportSales">
+   <option value="">All Sales</option>
+  </select>
+
+  <button class="btn" onclick="viewSalesReport()">
+   VIEW REPORT
+  </button>
+
+  <button class="btn dark" onclick="saveReportPDF()">
+   SAVE AS PDF
+  </button>
+ </div>
+
+ 
+<div class="card">
+ <div id="reportStoreHeader" style="text-align:center;margin-bottom:20px;">
+  <img id="reportStoreLogo" style="max-width:100px;max-height:100px;object-fit:contain;" hidden>
+  <h2 id="reportStoreName">Jewelry POS</h2>
+  <h3>Sales Report</h3>
+  <p id="reportPeriod">Report Period: All Dates</p>
+ </div>
+
+ <h3>Report Summary</h3>
+ <div id="reportSummary">
+  No report generated yet.
+ </div>
+</div>
+
+
+ <div class="card">
+  <h3>Transaction Details</h3>
+  <div id="reportDetails">
+   No report generated yet.
+  </div>
+ </div>
+ <div class="card">
+ <h3>Agent Report</h3>
+
+ <label>Select Agent</label>
+ <select id="agentReportSelect">
+  <option value="">Select Agent</option>
+ </select>
+
+ <label>From Date</label>
+ <input type="date" id="agentReportFrom">
+
+ <label>To Date</label>
+ <input type="date" id="agentReportTo">
+
+ <button class="btn" onclick="viewAgentReport()">
+  VIEW AGENT REPORT
+ </button>
+
+ <button class="btn dark" onclick="saveAgentReportPDF()">
+  SAVE AGENT REPORT PDF
+ </button>
+</div>
+
+<div class="card">
+ <div id="agentReportHeader" style="text-align:center;">
+  <img id="agentReportLogo"
+       style="max-width:100px;max-height:100px;object-fit:contain;"
+       hidden>
+  <h2 id="agentReportStoreName">Jewelry POS</h2>
+  <h3>Agent Sales Report</h3>
+  <p id="agentReportPeriod">Report Period: -</p>
+  <p id="agentReportName">Agent: -</p>
+ </div>
+
+ <h3>Agent Report Summary</h3>
+ <div id="agentReportSummary">
+  No report generated yet.
+ </div>
+
+ <h3>Transaction Details</h3>
+ <div id="agentReportDetails">
+  No report generated yet.
+ </div>
+</div>
+</section>
+
+<section id="agents" class="page">
+ <h2>Agent Management</h2>
+
+ <div class="card">
+  <h3 id="agentFormTitle">Add New Agent</h3>
+
+  <input type="hidden" id="editAgentId">
+
+  <label>Agent Name</label>
+  <input id="agentName" placeholder="Enter Agent Name">
+
+  <button class="btn" onclick="saveAgent()">SAVE AGENT</button>
+  <button class="btn dark" onclick="resetAgentForm()">CANCEL / RESET</button>
+ </div>
+
+ <div class="card">
+  <h3>Agent List</h3>
+
+  <input id="agentSearch"
+   placeholder="Search Agent Name"
+   oninput="renderAgents()">
+
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>No.</th>
+      <th>Agent Name</th>
+      <th>Action</th>
+     </tr>
+    </thead>
+    <tbody id="agentTable">
+     <tr><td colspan="3">No agents yet.</td></tr>
+    </tbody>
+   </table>
+  </div>
+ </div>
+</section>
+
+
+<section id="settings" class="page">
+ <h2>Settings</h2>
+ <div class="card">
+  <h3>Store Profile</h3>
+  <label>Store Name</label>
+  <input id="storeNameInput" placeholder="Enter Store Name">
+  <label>Upload Store Logo</label>
+  <input id="logoInput" type="file" accept="image/*">
+  <button class="btn" onclick="saveStore()">SAVE STORE PROFILE</button>
+ </div>
+ 
+<div class="card">
+ <h3>Commission Settings</h3>
+
+ <label>Default Guide Commission (%)</label>
+ <input type="number" id="settingGuidePercent"
+        min="0" max="100" step="0.1" placeholder="0">
+
+ <label>Default Driver Commission (%)</label>
+ <input type="number" id="settingDriverPercent"
+        min="0" max="100" step="0.1" placeholder="0">
+
+ <button class="btn" onclick="saveCommissionSettings()">
+  SAVE COMMISSION SETTINGS
+ </button>
+</div>
+
+<div class="card">
+ <h3>Discount Settings</h3>
+
+ <label>Discount Name</label>
+ <input id="discountName" placeholder="Example: VIP Discount">
+
+ <label>Discount Type</label>
+ <select id="discountType">
+  <option value="percent">Percentage (%)</option>
+  <option value="amount">Fixed Amount (Rp)</option>
+ </select>
+
+ <label>Discount Value</label>
+ <input type="number" id="discountValue" min="0" placeholder="Enter discount value">
+
+ <button class="btn" onclick="saveDiscountPreset()">
+  ADD DISCOUNT
+ </button>
+
+ <h3>Discount Presets</h3>
+ <table>
+  <thead>
+   <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Value</th>
+    <th>Action</th>
+   </tr>
+  </thead>
+  <tbody id="discountPresetTable"></tbody>
+ </table>
+</div>
+
+<div class="card">
+ <h3>Sales Name Settings</h3>
+
+ <label>Sales Name</label>
+ <input type="text" id="salesNameInput"
+        placeholder="Enter Sales Name">
+
+ <button class="btn" onclick="saveSalesName()">
+  ADD SALES NAME
+ </button>
+
+ <h3>Sales List</h3>
+ <table>
+  <thead>
+   <tr>
+    <th>Sales Name</th>
+    <th>Action</th>
+   </tr>
+  </thead>
+  <tbody id="salesNameTable"></tbody>
+ </table>
+</div>
+
+<div class="card">
+ <h3>Change Owner PIN</h3>
+ <label>Current Owner PIN</label>
+ <input type="password" id="oldOwnerPin" inputmode="numeric">
+
+ <label>New Owner PIN</label>
+ <input type="password" id="newOwnerPin" inputmode="numeric">
+
+ <button class="btn" onclick="changeOwnerPin()">
+  SAVE OWNER PIN
+ </button>
+</div>
+
+<div class="card">
+ <h3>Change Cashier PIN</h3>
+ <label>Current Cashier PIN</label>
+ <input type="password" id="oldCashierPin" inputmode="numeric">
+
+ <label>New Cashier PIN</label>
+ <input type="password" id="newCashierPin" inputmode="numeric">
+
+ <button class="btn" onclick="changeCashierPin()">
+  SAVE CASHIER PIN
+ </button>
+</div>
+
+ 
+<div class="card">
+ <h3>Backup & Restore</h3>
+
+ <p>Save all Jewelry POS data into a backup file.</p>
+
+ <button class="btn dark" onclick="backupJewelryData()">
+  BACKUP DATA
+ </button>
+
+ <label>Select Backup File</label>
+ <input type="file" id="restoreFile" accept=".json,application/json">
+
+ <button class="btn" onclick="restoreJewelryData()">
+  RESTORE DATA
+ </button>
+</div>
+
+ 
+<div class="card" id="printer1Card">
+ <h3>Printer 1 - Customer Receipt</h3>
+
+ <label>Paper Width</label>
+ <select id="printer1Width">
+  <option value="58">58 mm</option>
+  <option value="80" selected>80 mm</option>
+ </select>
+ 
+<button class="btn" onclick="savePrinterSettings()">
+ SAVE PRINTER SETTINGS
+</button>
+ 
+ <p>Bluetooth Printer</p>
+ <p id="printer1Status">Not Connected</p>
+</div>
+
+<div class="card" id="printer2Card">
+ <h3>Printer 2 - Internal Receipt</h3>
+
+ <label>Paper Width</label>
+ <select id="printer2Width">
+  <option value="58">58 mm</option>
+  <option value="80" selected>80 mm</option>
+ </select>
+
+ <p>Bluetooth Printer</p>
+ <p id="printer2Status">Not Connected</p>
+</div>
+
+</section>
+
+</main>
+</div>
 
 <script>
+
 function showPage(id,button){
+ const role=localStorage.getItem('jewelryLoginRole');
+
+ const cashierAllowed=[
+  'dashboard',
+  'cashier',
+  'history',
+  'reports',
+  'settings'
+ ];
+
+ if(role==='cashier' && !cashierAllowed.includes(id)){
+  alert('You do not have permission to access this menu.');
+  return;
+ }
+
  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
  document.getElementById(id).classList.add('active');
+ const settingsCards=document.querySelectorAll('#settings .card');
+
+settingsCards.forEach(card=>{
+ if(role==='cashier'){
+  card.style.display=
+   ['printer1Card','printer2Card'].includes(card.id)
+   ? ''
+   : 'none';
+ }else{
+  card.style.display='';
+ }
+});
+
  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
- button.classList.add('active');
+
+ if(button) button.classList.add('active');
 }
+
 
 function saveStore(){
     const name = document.getElementById('storeNameInput').value.trim();
@@ -2616,12 +3397,30 @@ function viewAgentReport(){
  }
 
  localStorage.setItem('jewelryLoginRole',role);
+  const ownerMenus=['menuProducts','menuStock','menuAgents'];
+
+ownerMenus.forEach(id=>{
+ document.getElementById(id).style.display=
+  role==='owner' ? '' : 'none';
+});
+  document.getElementById('loginUserLabel').textContent=role.toUpperCase();
 
  document.getElementById('loginScreen').style.display='none';
+  showPage('dashboard',document.querySelector('.sidebar button'));
 
  document.getElementById('loginPin').value='';
 
  alert('Login successful.');
+}
+ function logout(){
+ if(!confirm('Are you sure you want to logout?')) return;
+
+ localStorage.removeItem('jewelryLoginRole');
+  document.getElementById('loginUserLabel').textContent='Not Logged In';
+
+ document.getElementById('loginScreen').style.display='flex';
+ document.getElementById('loginPin').value='';
+ document.getElementById('loginRole').value='owner';
 }
 </script>
 
