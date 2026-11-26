@@ -3505,6 +3505,21 @@ document.getElementById('reportPeriod').textContent =
     const grandTotal = total('grandTotal');
     const guide = total('guideAmount');
     const driver = total('driverAmount');
+ const totalIDR = filtered.reduce(
+ (sum,t)=>sum+Number(t.paymentDetails?.IDR||0),0
+);
+
+const totalUSD = filtered.reduce(
+ (sum,t)=>sum+Number(t.paymentDetails?.USD||0),0
+);
+
+const totalJPY = filtered.reduce(
+ (sum,t)=>sum+Number(t.paymentDetails?.JPY||0),0
+);
+
+const convertedPayment = filtered.reduce(
+ (sum,t)=>sum+Number(t.paymentDetails?.totalPaidIDR||0),0
+);
 
     document.getElementById('reportSummary').innerHTML = `
         <p>Total Transactions: ${filtered.length}</p>
@@ -3513,6 +3528,14 @@ document.getElementById('reportPeriod').textContent =
         <p><strong>Grand Total: ${rupiah(grandTotal)}</strong></p>
         <p>Guide Commission: ${rupiah(guide)}</p>
         <p>Driver Commission: ${rupiah(driver)}</p>
+        <hr>
+<h4>Payment Currency Summary</h4>
+<p>Total IDR: ${rupiah(totalIDR)}</p>
+<p>Total USD: $${totalUSD.toFixed(2)}</p>
+<p>Total JPY: ¥${totalJPY.toFixed(2)}</p>
+<p>Total Payment Converted to IDR:
+ <strong>${rupiah(convertedPayment)}</strong>
+</p>
     `;
 
     if(filtered.length === 0){
