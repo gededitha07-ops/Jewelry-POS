@@ -1532,14 +1532,24 @@ function toggleCommissionMode(){
 
 function updateBillTotal(){
  const subtotal=getBillSubtotal();
- const discount=Number(document.getElementById('billDiscount').value)||0;
- const grandTotal=Math.max(0,subtotal-discount);
+
+ const discountInput=document.getElementById('billDiscount');
+ let discount=Number(discountInput.value)||0;
+
+ if(discount<0) discount=0;
+ if(discount>subtotal) discount=subtotal;
+
+ discountInput.value=discount;
+
+ const grandTotal=subtotal-discount;
  const rates=getCommissionRates();
 
  document.getElementById('billSubtotal').value=rupiah(subtotal);
  document.getElementById('billGrandTotal').value=rupiah(grandTotal);
+
  document.getElementById('guideAmount').textContent=
   rupiah(grandTotal*rates.guide/100);
+
  document.getElementById('driverAmount').textContent=
   rupiah(grandTotal*rates.driver/100);
 }
