@@ -2662,9 +2662,17 @@ function saveTransaction(){
  renderTransactionHistory();
 
  alert('Transaction saved successfully. Bill No: '+bill.billNo);
- 
+
 resetBill();
 updateDashboard();
+
+const printChoice=confirm(
+ 'Print both Customer Receipt and Internal Receipt?'
+);
+
+if(printChoice){
+ printBothReceipts(bill);
+}
  
 }
 
