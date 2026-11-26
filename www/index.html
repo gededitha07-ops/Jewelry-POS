@@ -824,7 +824,8 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   <label>Store Name</label>
   <input id="storeNameInput" placeholder="Enter Store Name">
   <label>Upload Store Logo</label>
-  <input id="logoInput" type="file" accept="image/*">
+  <input id="logoInput" type="file" accept="image/*"
+       onchange="checkOwnerLogo()">
   <button class="btn" onclick="saveStore()">SAVE STORE PROFILE</button>
  </div>
  
@@ -1769,6 +1770,16 @@ settingsCards.forEach(card=>{
 }
 
 
+function checkOwnerLogo(){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can change store logo.');
+
+        document.getElementById('logoInput').value='';
+        return;
+    }
+}
+
 function saveStore(){
 
     if(localStorage.getItem('jewelryLoginRole')!=='owner'){
@@ -2444,6 +2455,10 @@ function updateBillTotal(){
 }
 
 function saveTransaction(){
+  if(!['owner','cashier'].includes(localStorage.getItem('jewelryLoginRole'))){
+  alert('Please login before saving a transaction.');
+  return;
+ }
   
  const sales=document.getElementById('salesName').value.trim();
  const agentId=document.getElementById('billAgent').value;
@@ -2979,7 +2994,14 @@ function renderSalesNames(){
     `).join('');
 }
 
+
 function editSalesName(id){
+
+    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+        alert('Only Owner can edit Sales Names.');
+        return;
+    }
+
     const sales = salesNames.find(s => s.id === id);
     if(!sales) return;
 
@@ -3013,6 +3035,7 @@ function editSalesName(id){
 
     renderSalesNames();
 }
+
 
 
 function deleteSalesName(id){
@@ -3499,9 +3522,16 @@ function viewAgentReport(){
 
     window.print();
 }
- function login(){
+ 
+function login(){
+
  const role=document.getElementById('loginRole').value;
  const pin=document.getElementById('loginPin').value;
+
+ if(role!=='owner' && role!=='cashier'){
+  alert('Invalid login role.');
+  return;
+ }
 
  const ownerPin=localStorage.getItem('jewelryOwnerPin')||'1234';
  const cashierPin=localStorage.getItem('jewelryCashierPin')||'0000';
@@ -3517,31 +3547,51 @@ function viewAgentReport(){
  }
 
  localStorage.setItem('jewelryLoginRole',role);
-  const ownerMenus=['menuProducts','menuStock','menuAgents'];
 
-ownerMenus.forEach(id=>{
- document.getElementById(id).style.display=
-  role==='owner' ? '' : 'none';
-});
-  document.getElementById('loginUserLabel').textContent=role.toUpperCase();
+ const ownerMenus=['menuProducts','menuStock','menuAgents'];
+
+ ownerMenus.forEach(id=>{
+  document.getElementById(id).style.display=
+   role==='owner' ? '' : 'none';
+ });
+
+ document.getElementById('loginUserLabel').textContent=role.toUpperCase();
 
  document.getElementById('loginScreen').style.display='none';
-  showPage('dashboard',document.querySelector('.sidebar button'));
+
+ showPage('dashboard',document.querySelector('.sidebar button'));
 
  document.getElementById('loginPin').value='';
 
  alert('Login successful.');
 }
- function logout(){
+
+function logout(){
+
  if(!confirm('Are you sure you want to logout?')) return;
 
  localStorage.removeItem('jewelryLoginRole');
-  document.getElementById('loginUserLabel').textContent='Not Logged In';
+
+ document.getElementById('loginUserLabel').textContent='Not Logged In';
 
  document.getElementById('loginScreen').style.display='flex';
  document.getElementById('loginPin').value='';
  document.getElementById('loginRole').value='owner';
+
+ document.querySelectorAll('.page').forEach(p=>{
+  p.classList.remove('active');
+ });
+
+ document.getElementById('dashboard').classList.add('active');
+
+ document.querySelectorAll('.sidebar button').forEach(b=>{
+  b.classList.remove('active');
+ });
+
+ document.querySelector('.sidebar button').classList.add('active');
 }
+
+ 
 </script>
 
 </body>
