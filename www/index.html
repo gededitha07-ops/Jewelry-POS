@@ -2583,7 +2583,7 @@ function saveTransaction(){
   return;
  }
 
- const totalPaidIDR=paidIDR+(paidUSD*usdRate)+(paidJPY*jpyRate);
+ const totalPaidIDR=Math.round(paidIDR+(paidUSD*usdRate)+(paidJPY*jpyRate));
  const paymentDifference=totalPaidIDR-grandTotal;
 
  if(paymentDifference<0){
@@ -2675,13 +2675,17 @@ function resetBill(){
  document.getElementById('billAgent').value='';
  document.getElementById('carPlate').value='';
  document.getElementById('billPayment').value='';
+ document.getElementById('paidIDR').value=0;
+document.getElementById('paidUSD').value=0;
+document.getElementById('paidJPY').value=0;
  document.getElementById('billDiscount').value=0;
  document.getElementById('commissionMode').value='normal';
  document.getElementById('guidePercent').value='';
  document.getElementById('driverPercent').value='';
  document.getElementById('customCommissionFields').hidden=true;
 
- initializeBill();
+  initializeBill();
+ updateMixedPaymentSummary();
 }
 
 document.getElementById('billDiscount').addEventListener('input',updateBillTotal);
@@ -2689,6 +2693,7 @@ document.getElementById('guidePercent').addEventListener('input',updateBillTotal
 document.getElementById('driverPercent').addEventListener('input',updateBillTotal);
 
 initializeBill();
+updateMixedPaymentSummary(); 
 
  
 // JEWELRY POS - TRANSACTION HISTORY
@@ -2741,8 +2746,6 @@ function viewTransaction(id){
  const t=transactions.find(x=>x.id===id);
  if(!t)return;
 
- let items=(t.items||[]).map(item=>`
- 
  const pd=t.paymentDetails;
 
  const paymentBreakdown=pd ? `
@@ -2757,6 +2760,7 @@ function viewTransaction(id){
   <p>Change: <b>${rupiah(pd.changeIDR)}</b></p>
  ` : `<p>Payment: ${escapeProductText(t.payment||'-')}</p>`;
 
+ let items=(t.items||[]).map(item=>`
   <tr>
    <td>${escapeProductText(item.code)}</td>
    <td>${escapeProductText(item.name)}</td>
@@ -2785,17 +2789,19 @@ function viewTransaction(id){
   <p>Subtotal: <b>${rupiah(t.subtotal)}</b></p>
   <p>Discount: <b>${rupiah(t.discount)}</b></p>
   <h3>Grand Total: ${rupiah(t.grandTotal)}</h3>
+
   ${paymentBreakdown}
 
   <hr>
   <p>Commission Mode: ${escapeProductText(t.commissionMode||'-')}</p>
-<p>Guide (${Number(t.guidePercent||0)}%): ${rupiah(t.guideAmount||0)}</p>
-<p>Driver (${Number(t.driverPercent||0)}%): ${rupiah(t.driverAmount||0)}</p>
+  <p>Guide (${Number(t.guidePercent||0)}%): ${rupiah(t.guideAmount||0)}</p>
+  <p>Driver (${Number(t.driverPercent||0)}%): ${rupiah(t.driverAmount||0)}</p>
  `;
 
  document.getElementById('transactionDetail').hidden=false;
  document.getElementById('transactionDetail').scrollIntoView({behavior:'smooth'});
 }
+
 
 function closeTransactionDetail(){
  document.getElementById('transactionDetail').hidden=true;
@@ -3321,7 +3327,9 @@ function saveExchangeRates(){
 
  localStorage.setItem('jewelryUSDRate',usd);
  localStorage.setItem('jewelryJPYRate',jpy);
-
+ 
+updateMixedPaymentSummary();
+ 
  alert('Exchange rates saved successfully.');
 }
 
@@ -3348,7 +3356,7 @@ function updateMixedPaymentSummary(){
   (Number(document.getElementById('billDiscount').value)||0)
  );
 
- const totalPaid=paidIDR+(paidUSD*usdRate)+(paidJPY*jpyRate);
+ const totalPaid=Math.round(paidIDR+(paidUSD*usdRate)+(paidJPY*jpyRate));
  const difference=totalPaid-grandTotal;
 
  document.getElementById('currentUSDRate').textContent=
@@ -3387,6 +3395,7 @@ function loadPrinterSettings(){
 
 loadPrinterSettings();
  loadExchangeRates();
+ updateMixedPaymentSummary();
 
 function loadReportFilters(){
     const agentSelect = document.getElementById('reportAgent');
