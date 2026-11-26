@@ -1176,6 +1176,10 @@ function saveStockMovement(){
  const type=document.getElementById('stockType').value;
  const qty=Number(document.getElementById('stockQty').value);
  const notes=document.getElementById('stockNotes').value.trim();
+ if(!['in','out','adjust'].includes(type)){
+  alert('Invalid stock movement type.');
+  return;
+}
 
  const product=products.find(p=>p.id===productId);
 
@@ -1628,10 +1632,10 @@ function saveTransaction(){
  renderTransactionHistory();
 
  alert('Transaction saved successfully. Bill No: '+bill.billNo);
-
- resetBill();
- updateDashboard();
- if(typeof updateDashboard==='function') updateDashboard();
+ 
+resetBill();
+updateDashboard();
+ 
 }
 
 function resetBill(){
