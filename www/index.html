@@ -1735,6 +1735,10 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
 
 function showPage(id,button){
  const role=localStorage.getItem('jewelryLoginRole');
+ if(role!=='owner' && role!=='cashier'){
+  alert('Please login first.');
+  return;
+}
 
  const cashierAllowed=[
   'dashboard',
@@ -1813,18 +1817,31 @@ if(savedName){
  document.getElementById('storeNameInput').value=savedName;
 }
 
+
 document.getElementById('logoInput').addEventListener('change',function(e){
+
+ if(localStorage.getItem('jewelryLoginRole')!=='owner'){
+  alert('Only Owner can change store logo.');
+  e.target.value='';
+  return;
+ }
+
  const file=e.target.files[0];
  if(!file)return;
+
  const reader=new FileReader();
+
  reader.onload=function(){
   localStorage.setItem('jewelryStoreLogo',reader.result);
+
   const logo=document.getElementById('topLogo');
   logo.src=reader.result;
   logo.hidden=false;
  };
+
  reader.readAsDataURL(file);
 });
+
 
 const savedLogo=localStorage.getItem('jewelryStoreLogo');
 if(savedLogo){
