@@ -1706,7 +1706,7 @@ function viewTransaction(id){
  const t=transactions.find(x=>x.id===id);
  if(!t)return;
 
- let items=t.items.map(item=>`
+ let items=(t.items||[]).map(item=>`
   <tr>
    <td>${escapeProductText(item.code)}</td>
    <td>${escapeProductText(item.name)}</td>
@@ -1738,9 +1738,9 @@ function viewTransaction(id){
   <p>Payment: ${escapeProductText(t.payment)}</p>
 
   <hr>
-  <p>Commission Mode: ${escapeProductText(t.commissionMode)}</p>
-  <p>Guide (${t.guidePercent}%): ${rupiah(t.guideAmount)}</p>
-  <p>Driver (${t.driverPercent}%): ${rupiah(t.driverAmount)}</p>
+  <p>Commission Mode: ${escapeProductText(t.commissionMode||'-')}</p>
+<p>Guide (${Number(t.guidePercent||0)}%): ${rupiah(t.guideAmount||0)}</p>
+<p>Driver (${Number(t.driverPercent||0)}%): ${rupiah(t.driverAmount||0)}</p>
  `;
 
  document.getElementById('transactionDetail').hidden=false;
