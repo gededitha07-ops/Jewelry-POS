@@ -1555,11 +1555,7 @@ function updateBillTotal(){
 }
 
 function saveTransaction(){
-  const saveButton=document.getElementById('saveTransactionBtn');
-
- if(saveButton.disabled) return;
-
- saveButton.disabled=true;
+  
  const sales=document.getElementById('salesName').value.trim();
  const agentId=document.getElementById('billAgent').value;
  const agent=agents.find(a=>a.id===agentId);
@@ -1615,6 +1611,11 @@ function saveTransaction(){
   driverAmount,
   createdAt:new Date().toISOString()
  };
+  const saveButton=document.getElementById('saveTransactionBtn');
+
+ if(saveButton.disabled) return;
+
+ saveButton.disabled=true;
 
  // Reduce stock for catalog products only.
  bill.items.forEach(item=>{
@@ -1654,6 +1655,7 @@ updateDashboard();
 }
 
 function resetBill(){
+  document.getElementById('saveTransactionBtn').disabled=false;
  billCart=[];
  document.getElementById('salesName').value='';
  document.getElementById('billAgent').value='';
