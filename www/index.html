@@ -3966,16 +3966,25 @@ function printBothReceipts(bill){
  printCustomerReceipt(bill);
 
  setTimeout(()=>{
-  printInternalReceipt(bill);
- },1000);
+  const continuePrint=confirm(
+   'Customer Receipt selesai diproses. Lanjutkan ke Internal Receipt?'
+  );
+
+  if(continuePrint){
+   printInternalReceipt(bill);
+  }
+
+ },3000);
 
 }
- function printReceiptContent(content,title){
-  const paperWidth = title==='Customer Receipt'
- ? (localStorage.getItem('jewelryPrinter1Width')||'80')
- : (localStorage.getItem('jewelryPrinter2Width')||'80');
+ 
+function printReceiptContent(content,title){
 
-const paperSize = paperWidth==='58' ? '48mm' : '72mm';
+ const paperWidth = title==='Customer Receipt'
+  ? (localStorage.getItem('jewelryPrinter1Width')||'80')
+  : (localStorage.getItem('jewelryPrinter2Width')||'80');
+
+ const paperSize = paperWidth==='58' ? '48mm' : '72mm';
 
  const printWindow=window.open(
   '',
@@ -3998,28 +4007,38 @@ const paperSize = paperWidth==='58' ? '48mm' : '72mm';
    <title>${title}</title>
    <style>
     body{
- font-family:Arial,sans-serif;
- font-size:12px;
- width:${paperSize};
- margin:0;
- padding:5px;
- color:#000;
- box-sizing:border-box;
-}
+     font-family:Arial,sans-serif;
+     font-size:12px;
+     width:${paperSize};
+     margin:0;
+     padding:5px;
+     color:#000;
+     box-sizing:border-box;
+    }
+
+    .receipt{
+     width:100%;
+     overflow-wrap:break-word;
+    }
+
     h2,h3,h4,p{
      text-align:center;
     }
+
     table{
      width:100%;
      border-collapse:collapse;
     }
+
     th,td{
      padding:5px 2px;
      text-align:left;
      border-bottom:1px dashed #999;
     }
+
     @page{
-     margin:3mm;
+     size:${paperSize} auto;
+     margin:0;
     }
    </style>
   </head>
@@ -4036,6 +4055,7 @@ const paperSize = paperWidth==='58' ? '48mm' : '72mm';
   printWindow.print();
  };
 }
+
 </script>
 
 </body>
