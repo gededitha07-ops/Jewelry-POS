@@ -2295,7 +2295,9 @@ document.getElementById('reportPeriod').textContent =
         if(agent && t.agent !== agent) return false;
         if(sales && t.sales !== sales) return false;
 
-        return true;
+                return true;
+    }).sort((a,b) => {
+        return (b.date || '').localeCompare(a.date || '');
     });
 
     const total = key => filtered.reduce(
@@ -2408,14 +2410,16 @@ function viewAgentReport(){
     }
 
     const filtered = transactions.filter(t => {
-        const date = t.date || '';
+    const date = t.date || '';
 
-        if(t.agent !== agent) return false;
-        if(from && date < from) return false;
-        if(to && date > to) return false;
+    if(t.agent !== agent) return false;
+    if(from && date < from) return false;
+    if(to && date > to) return false;
 
-        return true;
-    });
+    return true;
+}).sort((a,b) => {
+    return (b.date || '').localeCompare(a.date || '');
+});
 
     const total = key => filtered.reduce(
         (sum,t) => sum + Number(t[key] || 0), 0
