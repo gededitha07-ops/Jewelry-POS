@@ -239,6 +239,58 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  <span>Owner / Cashier</span>
 </header>
 
+<body>
+
+<div id="loginScreen" style="
+ position:fixed;
+ inset:0;
+ background:#101b32;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ z-index:9999;
+ padding:20px;
+">
+ <div style="
+  background:white;
+  width:100%;
+  max-width:380px;
+  padding:30px;
+  border-radius:16px;
+  text-align:center;
+ ">
+  <h2 style="color:#101b32;margin-bottom:8px;">
+   JEWELRY POS
+  </h2>
+
+  <p style="color:#758096;margin-bottom:25px;">
+   Jewelry Store Management System
+  </p>
+
+  <label>Select Login</label>
+  <select id="loginRole">
+   <option value="owner">OWNER</option>
+   <option value="cashier">CASHIER</option>
+  </select>
+
+  <label>Enter PIN</label>
+  <input
+   type="password"
+   id="loginPin"
+   inputmode="numeric"
+   placeholder="Enter your PIN"
+  >
+
+  <button class="btn" style="width:100%" onclick="login()">
+   LOGIN
+  </button>
+
+  <p style="color:#758096;font-size:12px;margin-top:20px;">
+   Authorized Personnel Only
+  </p>
+ </div>
+</div>
+
 <div class="layout">
 <nav class="sidebar">
  <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
@@ -2545,6 +2597,31 @@ function viewAgentReport(){
     };
 
     window.print();
+}
+ function login(){
+ const role=document.getElementById('loginRole').value;
+ const pin=document.getElementById('loginPin').value;
+
+ const ownerPin=localStorage.getItem('jewelryOwnerPin')||'1234';
+ const cashierPin=localStorage.getItem('jewelryCashierPin')||'0000';
+
+ if(role==='owner' && pin!==ownerPin){
+  alert('Incorrect Owner PIN.');
+  return;
+ }
+
+ if(role==='cashier' && pin!==cashierPin){
+  alert('Incorrect Cashier PIN.');
+  return;
+ }
+
+ localStorage.setItem('jewelryLoginRole',role);
+
+ document.getElementById('loginScreen').style.display='none';
+
+ document.getElementById('loginPin').value='';
+
+ alert('Login successful.');
 }
 </script>
 
