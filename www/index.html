@@ -1655,6 +1655,7 @@ document.getElementById('driverPercent').addEventListener('input',updateBillTota
 
 initializeBill();
 
+ 
 // JEWELRY POS - TRANSACTION HISTORY
 
 function renderTransactionHistory(){
@@ -1667,14 +1668,17 @@ function renderTransactionHistory(){
 
  const filtered=transactions.filter(t=>{
   const matchSearch=
-   t.billNo.toLowerCase().includes(search)||
-   t.sales.toLowerCase().includes(search)||
-   t.agent.toLowerCase().includes(search);
+   (t.billNo||'').toLowerCase().includes(search)||
+   (t.sales||'').toLowerCase().includes(search)||
+   (t.agent||'').toLowerCase().includes(search);
 
   const matchFrom=!from||t.date>=from;
   const matchTo=!to||t.date<=to;
 
   return matchSearch&&matchFrom&&matchTo;
+ }).sort((a,b)=>{
+  return (b.date||'').localeCompare(a.date||'') ||
+         Number(b.createdAt||0)-Number(a.createdAt||0);
  });
 
  if(filtered.length===0){
@@ -1682,20 +1686,21 @@ function renderTransactionHistory(){
   return;
  }
 
- table.innerHTML=filtered.slice().reverse().map(t=>`
+ table.innerHTML=filtered.map(t=>`
   <tr>
-   <td>${escapeProductText(t.billNo)}</td>
-   <td>${escapeProductText(t.date)}</td>
-   <td>${escapeProductText(t.sales)}</td>
-   <td>${escapeProductText(t.agent)}</td>
+   <td>${escapeProductText(t.billNo||'-')}</td>
+   <td>${escapeProductText(t.date||'-')}</td>
+   <td>${escapeProductText(t.sales||'-')}</td>
+   <td>${escapeProductText(t.agent||'-')}</td>
    <td>${rupiah(t.grandTotal)}</td>
-   <td>${escapeProductText(t.payment)}</td>
+   <td>${escapeProductText(t.payment||'-')}</td>
    <td>
     <button class="btn" onclick="viewTransaction('${t.id}')">DETAIL</button>
    </td>
   </tr>
  `).join('');
 }
+
 
 function viewTransaction(id){
  const t=transactions.find(x=>x.id===id);
