@@ -2712,16 +2712,8 @@ function saveTransaction(){
 resetBill();
 updateDashboard();
 
-const printChoice=confirm(
- 'Print both Customer Receipt and Internal Receipt?'
-);
-
-if(printChoice){
- printBothReceipts(bill);
+printBothReceipts(bill);
 }
- 
-}
-
 function resetBill(){
   document.getElementById('saveTransactionBtn').disabled=false;
  billCart=[];
@@ -3460,6 +3452,7 @@ function loadPrinterSettings(){
         localStorage.getItem('jewelryPrinter2Device') || '';
 }
 
+
 async function loadBluetoothDevices(){
     if(!BluetoothPrinter){
         alert('Bluetooth plugin is not available. Please build the Android APK first.');
@@ -3469,29 +3462,50 @@ async function loadBluetoothDevices(){
     try{
         const result = await BluetoothPrinter.getPairedDevices();
 
-        ['printer1Device','printer2Device'].forEach(id=>{
-            const select = document.getElementById(id);
-            const previous = select.value;
+        const printerLists = [
+            {
+                id: 'printer1Device',
+                storage: 'jewelryPrinter1Device',
+                label: 'Select Printer 1'
+            },
+            {
+                id: 'printer2Device',
+                storage: 'jewelryPrinter2Device',
+                label: 'Select Printer 2'
+            }
+        ];
 
-            select.innerHTML = '<option value="">Select Bluetooth Printer</option>';
+        printerLists.forEach(printer=>{
+            const select = document.getElementById(printer.id);
+            const savedAddress = localStorage.getItem(printer.storage) || '';
+
+            select.innerHTML =
+                '<option value="">' + printer.label + '</option>';
 
             result.devices.forEach(device=>{
                 const option = document.createElement('option');
+
                 option.value = device.address;
-                option.textContent = device.name + ' (' + device.address + ')';
+                option.textContent =
+                    device.name + ' (' + device.address + ')';
+
                 select.appendChild(option);
             });
 
-            if(previous){
-                select.value = previous;
-            }
+            const exists = Array.from(select.options).some(
+                option => option.value === savedAddress
+            );
+
+            select.value = exists ? savedAddress : '';
         });
 
         alert('Bluetooth devices refreshed.');
+
     }catch(error){
         alert('Unable to load Bluetooth devices: ' + error);
     }
 }
+
 
 async function connectPrinter(printerId){
     if(!BluetoothPrinter){
@@ -4027,133 +4041,237 @@ function logout(){
  document.querySelector('.sidebar button').classList.add('active');
 }
 
- function printCustomerReceipt(bill){
+async function printCustomerReceipt(bill){
 
- const storeName=localStorage.getItem('jewelryStoreName')||'Jewelry POS';
-  const storeLogo=localStorage.getItem('jewelryStoreLogo')||'';
-const logoHTML=storeLogo
- ? `<img src="${storeLogo}" style="max-width:100px;max-height:70px;display:block;margin:auto;">`
- : '';
+ if(!BluetoothPrinter){
+  alert('Bluetooth printer plugin is not available.');
+  return;
+ }
 
- let items=(bill.items||[]).map(item=>`
-  <tr>
-   <td>${item.name}</td>
-   <td>${item.qty}</td>
-   <td>${rupiah(item.price*item.qty)}</td>
-  </tr>
- `).join('');
+ const width = localStorage.getItem('jewelryPrinter1Width') || '80';
+ const lineWidth = width === '58' ? 32 : 48;
+ const separator = '-'.repeat(lineWidth);
 
- const pd=bill.paymentDetails||{};
+ const storeName =
+  localStorage.getItem('jewelryStoreName') || 'Jewelry POS';
 
- const receipt=`
-  <div class="receipt">
-   ${logoHTML}
-<h2>${storeName}</h2>
-   <h3>CUSTOMER RECEIPT</h3>
-   <p>Bill No: ${bill.billNo}</p>
-   <p>Date: ${bill.date}</p>
-   <p>Sales: ${bill.sales}</p>
-   <p>Agent: ${bill.agent}</p>
-   <p>Car Plate: ${bill.carPlate||'-'}</p>
-   <hr>
-   <table>
-    <tr><th>Item</th><th>Qty</th><th>Total</th></tr>
-    ${items}
-   </table>
-   <hr>
-   <p>Subtotal: ${rupiah(bill.subtotal)}</p>
-   <p>Discount: ${rupiah(bill.discount)}</p>
-   <h3>Grand Total: ${rupiah(bill.grandTotal)}</h3>
-   <hr>
-   <h4>Payment Breakdown</h4>
-   <p>IDR: ${rupiah(pd.IDR||0)}</p>
-   <p>USD: $${Number(pd.USD||0).toFixed(2)}</p>
-   <p>USD Rate: ${rupiah(pd.usdRate||0)}</p>
-   <p>JPY: ¥${Number(pd.JPY||0).toFixed(2)}</p>
-   <p>JPY Rate: ${rupiah(pd.jpyRate||0)}</p>
-   <p>Total Paid: ${rupiah(pd.totalPaidIDR||0)}</p>
-   <p>Change: ${rupiah(pd.changeIDR||0)}</p>
-   <p>Payment Method: ${bill.payment||'-'}</p>
-   <hr>
-   <p>Thank you for your purchase!</p>
-  </div>
- `;
+ const pd = bill.paymentDetails || {};
 
- printReceiptContent(receipt,'Customer Receipt');
+ function wrapText(value){
+  const words = String(value ?? '').split(' ');
+  const lines = [];
+  let line = '';
+
+  words.forEach(word=>{
+   if((line + ' ' + word).trim().length > lineWidth){
+    if(line) lines.push(line);
+    line = word;
+   }else{
+    line = (line + ' ' + word).trim();
+   }
+  });
+
+  if(line) lines.push(line);
+  return lines;
+ }
+
+ let receipt = '';
+
+ receipt += storeName + '\n';
+ receipt += separator + '\n';
+ receipt += 'CUSTOMER RECEIPT\n';
+ receipt += separator + '\n';
+ receipt += 'Bill No: ' + bill.billNo + '\n';
+ receipt += 'Date: ' + bill.date + '\n';
+ receipt += 'Sales: ' + bill.sales + '\n';
+ receipt += 'Agent: ' + bill.agent + '\n';
+ receipt += 'Car Plate: ' + (bill.carPlate || '-') + '\n';
+ receipt += separator + '\n';
+
+ (bill.items || []).forEach(item=>{
+  wrapText(item.name).forEach(line=>{
+   receipt += line + '\n';
+  });
+
+  receipt +=
+   item.qty + ' x ' + rupiah(item.price) +
+   ' = ' + rupiah(item.price * item.qty) + '\n';
+ });
+
+ receipt += separator + '\n';
+ receipt += 'Subtotal: ' + rupiah(bill.subtotal) + '\n';
+ receipt += 'Discount: ' + rupiah(bill.discount) + '\n';
+ receipt += separator + '\n';
+ receipt += 'GRAND TOTAL\n';
+ receipt += rupiah(bill.grandTotal) + '\n';
+ receipt += separator + '\n';
+
+ receipt += 'PAYMENT BREAKDOWN\n';
+ receipt += 'IDR: ' + rupiah(pd.IDR || 0) + '\n';
+ receipt += 'USD: $' + Number(pd.USD || 0).toFixed(2) + '\n';
+ receipt += 'USD Rate: ' + rupiah(pd.usdRate || 0) + '\n';
+ receipt += 'JPY: ' + Number(pd.JPY || 0).toFixed(2) + '\n';
+ receipt += 'JPY Rate: ' + rupiah(pd.jpyRate || 0) + '\n';
+ receipt += 'Total Paid: ' + rupiah(pd.totalPaidIDR || 0) + '\n';
+ receipt += 'Change: ' + rupiah(pd.changeIDR || 0) + '\n';
+ receipt += 'Payment: ' + (bill.payment || '-') + '\n';
+
+ receipt += separator + '\n';
+ receipt += 'Thank you for your purchase!\n';
+ receipt += '\n\n';
+
+ try{
+  await BluetoothPrinter.print({
+   printerId: 'printer1',
+   text: receipt
+  });
+
+  alert('Customer Receipt sent to Printer 1.');
+  
+}catch(error){
+  throw error;
+}
+ 
 }
 
- function printInternalReceipt(bill){
+ 
+async function printInternalReceipt(bill){
 
- const storeName=localStorage.getItem('jewelryStoreName')||'Jewelry POS';
-  const storeLogo=localStorage.getItem('jewelryStoreLogo')||'';
-const logoHTML=storeLogo
- ? `<img src="${storeLogo}" style="max-width:100px;max-height:70px;display:block;margin:auto;">`
- : '';
+ if(!BluetoothPrinter){
+  alert('Bluetooth printer plugin is not available.');
+  return;
+ }
 
- let items=(bill.items||[]).map(item=>`
-  <tr>
-   <td>${item.name}</td>
-   <td>${item.qty}</td>
-   <td>${rupiah(item.price*item.qty)}</td>
-  </tr>
- `).join('');
+ const width = localStorage.getItem('jewelryPrinter2Width') || '80';
+ const lineWidth = width === '58' ? 32 : 48;
+ const separator = '-'.repeat(lineWidth);
 
- const pd=bill.paymentDetails||{};
+ const storeName =
+  localStorage.getItem('jewelryStoreName') || 'Jewelry POS';
 
- const receipt=`
-  <div class="receipt">
-   ${logoHTML}
-<h2>${storeName}</h2>
-   <h3>INTERNAL RECEIPT</h3>
-   <p>Bill No: ${bill.billNo}</p>
-   <p>Date: ${bill.date}</p>
-   <p>Sales: ${bill.sales}</p>
-   <p>Agent: ${bill.agent}</p>
-   <p>Car Plate: ${bill.carPlate||'-'}</p>
-   <hr>
-   <table>
-    <tr><th>Item</th><th>Qty</th><th>Total</th></tr>
-    ${items}
-   </table>
-   <hr>
-   <p>Subtotal: ${rupiah(bill.subtotal)}</p>
-   <p>Discount: ${rupiah(bill.discount)}</p>
-   <h3>Grand Total: ${rupiah(bill.grandTotal)}</h3>
-   <hr>
-   <h4>Payment Breakdown</h4>
-   <p>IDR: ${rupiah(pd.IDR||0)}</p>
-   <p>USD: $${Number(pd.USD||0).toFixed(2)}</p>
-   <p>JPY: ¥${Number(pd.JPY||0).toFixed(2)}</p>
-   <p>Total Paid: ${rupiah(pd.totalPaidIDR||0)}</p>
-   <p>Change: ${rupiah(pd.changeIDR||0)}</p>
-   <hr>
-   <p>Commission Mode: ${bill.commissionMode||'-'}</p>
-   <p>Guide (${Number(bill.guidePercent||0)}%): ${rupiah(bill.guideAmount||0)}</p>
-   <p>Driver (${Number(bill.driverPercent||0)}%): ${rupiah(bill.driverAmount||0)}</p>
-   <h3>Total Commission: ${rupiah(
-    Number(bill.guideAmount||0)+Number(bill.driverAmount||0)
-   )}</h3>
-  </div>
- `;
+ const pd = bill.paymentDetails || {};
 
- printReceiptContent(receipt,'Internal Receipt');
+ function wrapText(value){
+  const words = String(value ?? '').split(' ');
+  const lines = [];
+  let line = '';
+
+  words.forEach(word=>{
+   if((line + ' ' + word).trim().length > lineWidth){
+    if(line) lines.push(line);
+    line = word;
+   }else{
+    line = (line + ' ' + word).trim();
+   }
+  });
+
+  if(line) lines.push(line);
+  return lines;
+ }
+
+ let receipt = '';
+
+ receipt += storeName + '\n';
+ receipt += separator + '\n';
+ receipt += 'INTERNAL RECEIPT\n';
+ receipt += separator + '\n';
+ receipt += 'Bill No: ' + bill.billNo + '\n';
+ receipt += 'Date: ' + bill.date + '\n';
+ receipt += 'Sales: ' + bill.sales + '\n';
+ receipt += 'Agent: ' + bill.agent + '\n';
+ receipt += 'Car Plate: ' + (bill.carPlate || '-') + '\n';
+ receipt += separator + '\n';
+
+ (bill.items || []).forEach(item=>{
+  wrapText(item.name).forEach(line=>{
+   receipt += line + '\n';
+  });
+
+  receipt +=
+   item.qty + ' x ' + rupiah(item.price) +
+   ' = ' + rupiah(item.price * item.qty) + '\n';
+ });
+
+ receipt += separator + '\n';
+ receipt += 'Subtotal: ' + rupiah(bill.subtotal) + '\n';
+ receipt += 'Discount: ' + rupiah(bill.discount) + '\n';
+ receipt += separator + '\n';
+ receipt += 'GRAND TOTAL\n';
+ receipt += rupiah(bill.grandTotal) + '\n';
+ receipt += separator + '\n';
+
+ receipt += 'PAYMENT BREAKDOWN\n';
+ receipt += 'IDR: ' + rupiah(pd.IDR || 0) + '\n';
+ receipt += 'USD: $' + Number(pd.USD || 0).toFixed(2) + '\n';
+ receipt += 'JPY: ' + Number(pd.JPY || 0).toFixed(2) + '\n';
+ receipt += 'Total Paid: ' + rupiah(pd.totalPaidIDR || 0) + '\n';
+ receipt += 'Change: ' + rupiah(pd.changeIDR || 0) + '\n';
+
+ receipt += separator + '\n';
+ receipt += 'COMMISSION DETAILS\n';
+ receipt += 'Mode: ' + (bill.commissionMode || '-') + '\n';
+ receipt +=
+  'Guide (' + Number(bill.guidePercent || 0) +
+  '%): ' + rupiah(bill.guideAmount || 0) + '\n';
+
+ receipt +=
+  'Driver (' + Number(bill.driverPercent || 0) +
+  '%): ' + rupiah(bill.driverAmount || 0) + '\n';
+
+ receipt += separator + '\n';
+ receipt += 'TOTAL COMMISSION\n';
+ receipt += rupiah(
+  Number(bill.guideAmount || 0) +
+  Number(bill.driverAmount || 0)
+) + '\n';
+
+ receipt += '\n\n';
+
+ try{
+  await BluetoothPrinter.print({
+   printerId: 'printer2',
+   text: receipt
+  });
+
+  alert('Internal Receipt sent to Printer 2.');
+  
+}catch(error){
+  throw error;
 }
-function printBothReceipts(bill){
-
- printCustomerReceipt(bill);
-
- setTimeout(()=>{
-  const continuePrint=confirm(
-   'Customer Receipt selesai diproses. Lanjutkan ke Internal Receipt?'
-  );
-
-  if(continuePrint){
-   printInternalReceipt(bill);
-  }
-
- },3000);
-
+ 
 }
+
+ 
+
+async function printBothReceipts(bill){
+
+ const printer1 = BluetoothPrinter;
+ const printer2 = BluetoothPrinter;
+
+ if(!printer1){
+  alert('Bluetooth printer plugin is not available.');
+  return;
+ }
+
+ const results = await Promise.allSettled([
+  printCustomerReceipt(bill),
+  printInternalReceipt(bill)
+ ]);
+
+ const customerOK = results[0].status === 'fulfilled';
+ const internalOK = results[1].status === 'fulfilled';
+
+ if(customerOK && internalOK){
+  alert('Both receipts have been sent to their printers.');
+ }else if(customerOK){
+  alert('Customer Receipt sent. Internal Receipt failed.');
+ }else if(internalOK){
+  alert('Internal Receipt sent. Customer Receipt failed.');
+ }else{
+  alert('Both receipt printing operations failed. Check printer connections.');
+ }
+}
+
  
 function printReceiptContent(content,title){
 
