@@ -405,7 +405,7 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   <label>Item Name</label>
   <input id="manualItemName" placeholder="Enter Item Name">
 
-  <label>Selling Price (Rp)</label>
+  <label>Selling Price (USD)</label>
   <input type="number" id="manualItemPrice" min="0" placeholder="Enter Price">
 
   <label>Quantity (PCS)</label>
@@ -450,11 +450,18 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  APPLY DISCOUNT
 </button>
 
-  <label>Discount (Nominal Rp)</label>
+  <label>Discount (Nominal - Selected Currency)</label>
   <input type="number" id="billDiscount" min="0" value="0">
 
   <label>Grand Total</label>
   <input id="billGrandTotal" value="Rp 0" readonly>
+
+  <label>Transaction Currency</label>
+  <select id="billCurrency" onchange="updateBillTotal()">
+   <option value="USD">USD ($)</option>
+   <option value="IDR">IDR (Rp)</option>
+   <option value="JPY">JPY (Â¥)</option>
+  </select>
 
   <label>Payment Method</label>
   <select id="billPayment">
@@ -487,8 +494,6 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
 
  <div class="card">
   <h3>Transaction Summary</h3>
-  <p>Guide Commission: <strong id="guideAmount">Rp 0</strong></p>
-  <p>Driver Commission: <strong id="driverAmount">Rp 0</strong></p>
 
   <button class="btn" id="saveTransactionBtn" onclick="saveTransaction()">SAVE TRANSACTION</button>
   <button class="btn dark" onclick="resetBill()">NEW BILL / RESET</button>
@@ -514,7 +519,7 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   <label>Category</label>
   <input id="productCategory" placeholder="Enter Category">
 
-  <label>Selling Price (Rp)</label>
+  <label>Selling Price (USD)</label>
   <input id="productPrice" type="number" min="0" placeholder="Enter Selling Price">
 
   <label>Stock (PCS)</label>
@@ -578,6 +583,8 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  <div class="card" style="margin-top:20px">
   <h3>Stock In / Stock Out / Adjustment</h3>
 
+  <label>Search Product</label>
+  <input id="stockProductSearch" type="search" placeholder="Search Item Code or Item Name" oninput="renderStockProductOptions()">
   <label>Select Product</label>
   <select id="stockProduct">
    <option value="">Select Product</option>
@@ -842,6 +849,18 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   <button class="btn" onclick="saveStore()">SAVE STORE PROFILE</button>
  </div>
  
+<div class="card" id="exchangeRateCard">
+ <h3>Currency Exchange Rates</h3>
+ <p>Enter how much IDR one USD and one JPY is worth.</p>
+ <label>1 USD = IDR (Rp)</label>
+ <input type="number" id="usdRateInput" min="1" step="1" placeholder="Example: 16000">
+ <label>1 JPY = IDR (Rp)</label>
+ <input type="number" id="jpyRateInput" min="1" step="1" placeholder="Example: 105">
+ <button class="btn" onclick="saveExchangeRates()">SAVE EXCHANGE RATES</button>
+ <p>Current USD rate: <strong id="currentUSDRate">Not Set</strong></p>
+ <p>Current JPY rate: <strong id="currentJPYRate">Not Set</strong></p>
+</div>
+
 <div class="card">
  <h3>Commission Settings</h3>
 
@@ -867,7 +886,7 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  <label>Discount Type</label>
  <select id="discountType">
   <option value="percent">Percentage (%)</option>
-  <option value="amount">Fixed Amount (Rp)</option>
+  <option value="amount">Fixed Amount (Transaction Currency)</option>
  </select>
 
  <label>Discount Value</label>
@@ -891,7 +910,7 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  </table>
 </div>
 
-<div class="card">
+<div class="card" id="salesNameSettingsCard">
  <h3>Sales Name Settings</h3>
 
  <label>Sales Name</label>
@@ -1054,7 +1073,8 @@ function showPage(id,button){
   'cashier',
   'history',
   'reports',
-  'settings'
+  'settings',
+  'agents'
  ];
 
  if(role==='cashier' && !cashierAllowed.includes(id)){
@@ -1069,7 +1089,7 @@ function showPage(id,button){
 settingsCards.forEach(card=>{
  if(role==='cashier'){
   card.style.display=
-   ['exchangeRateCard','printer1Card','printer2Card'].includes(card.id)
+   ['exchangeRateCard','salesNameSettingsCard','printer1Card','printer2Card'].includes(card.id)
    ? ''
    : 'none';
  }else{
@@ -1238,7 +1258,7 @@ function renderProducts(){
    <td>${escapeProductText(p.code)}</td>
    <td>${escapeProductText(p.name)}</td>
    <td>${escapeProductText(p.category||'-')}</td>
-   <td>Rp ${Number(p.price).toLocaleString('id-ID')}</td>
+   <td>$${Number(p.price).toFixed(2)}</td>
    <td>${p.stock} PCS</td>
    <td>
     <button class="btn" onclick="editProduct('${p.id}')">EDIT</button>
@@ -1326,17 +1346,7 @@ function renderStockManagement(){
  document.getElementById('stockLowCount').textContent=lowStock.length;
  document.getElementById('stockOutCount').textContent=outStock.length;
 
- const select=document.getElementById('stockProduct');
- const currentValue=select.value;
-
- select.innerHTML='<option value="">Select Product</option>'+
- products.map(p=>
-  `<option value="${p.id}">${escapeProductText(p.code)} - ${escapeProductText(p.name)}</option>`
- ).join('');
-
- if(products.some(p=>p.id===currentValue)){
-  select.value=currentValue;
- }
+ renderStockProductOptions();
 
  const lowTable=document.getElementById('lowStockTable');
 
@@ -1367,6 +1377,17 @@ function renderStockManagement(){
    </tr>
   `).join('');
  }
+}
+
+
+function renderStockProductOptions(){
+ const select=document.getElementById('stockProduct');
+ if(!select)return;
+ const currentValue=select.value;
+ const search=(document.getElementById('stockProductSearch')?.value||'').trim().toLowerCase();
+ const filtered=products.filter(p=>String(p.code||'').toLowerCase().includes(search)||String(p.name||'').toLowerCase().includes(search));
+ select.innerHTML='<option value="">Select Product</option>'+filtered.map(p=>`<option value="${escapeProductText(p.id)}">${escapeProductText(p.code)} - ${escapeProductText(p.name)}</option>`).join('');
+ if(filtered.some(p=>String(p.id)===currentValue))select.value=currentValue;
 }
 
 function saveStockMovement(){
@@ -1470,12 +1491,13 @@ let agents = JSON.parse(
 
 function saveAgent(){
 
- if(localStorage.getItem('jewelryLoginRole')!=='owner'){
-  alert('Only Owner can manage agents.');
+ const role=localStorage.getItem('jewelryLoginRole');
+ const id=document.getElementById('editAgentId').value;
+ if(role!=='owner' && (role!=='cashier' || id)){
+  alert('Cashier can add new agents. Only Owner can edit agents.');
   return;
  }
 
- const id=document.getElementById('editAgentId').value;
  const name=document.getElementById('agentName').value.trim();
 
  if(!name){
@@ -1594,6 +1616,18 @@ let billCart = [];
 function rupiah(value){
  return 'Rp ' + Number(value||0).toLocaleString('id-ID');
 }
+function getCurrencyRate(currency){
+ if(currency==='IDR') return Number(localStorage.getItem('jewelryUSDRate'))||0;
+ if(currency==='JPY'){ const usd=Number(localStorage.getItem('jewelryUSDRate'))||0; const jpy=Number(localStorage.getItem('jewelryJPYRate'))||0; return jpy>0?usd/jpy:0; }
+ return 1;
+}
+function formatCurrency(value,currency){
+ const n=Number(value||0);
+ if(currency==='IDR') return 'Rp '+Math.round(n).toLocaleString('id-ID');
+ if(currency==='JPY') return 'Â¥'+Math.round(n).toLocaleString('en-US');
+ return '$'+n.toFixed(2);
+}
+function usdToCurrency(value,currency){ return Number(value||0)*getCurrencyRate(currency); }
 
 function generateBillNo(){
  const number=Number(localStorage.getItem('jewelryBillCounter')||0)+1;
@@ -1734,9 +1768,9 @@ function renderBillCart(){
  table.innerHTML=billCart.map((item,index)=>`
   <tr>
    <td>${escapeProductText(item.code)} - ${escapeProductText(item.name)}</td>
-   <td>${rupiah(item.price)}</td>
+   <td>${formatCurrency(usdToCurrency(item.price,document.getElementById('billCurrency').value),document.getElementById('billCurrency').value)}</td>
    <td>${item.qty}</td>
-   <td>${rupiah(item.price*item.qty)}</td>
+   <td>${formatCurrency(usdToCurrency(item.price*item.qty,document.getElementById('billCurrency').value),document.getElementById('billCurrency').value)}</td>
    <td>
     <button class="btn dark" onclick="removeBillItem(${index})">REMOVE</button>
    </td>
@@ -1776,176 +1810,57 @@ function toggleCommissionMode(){
 }
 
 function updateBillTotal(){
- const subtotal=getBillSubtotal();
-
+ const currency=document.getElementById('billCurrency')?.value||'USD';
+ const subtotalUSD=getBillSubtotal();
+ const rate=getCurrencyRate(currency);
  const discountInput=document.getElementById('billDiscount');
  let discount=Number(discountInput.value)||0;
-
+ const subtotalDisplay=subtotalUSD*rate;
  if(discount<0) discount=0;
- if(discount>subtotal) discount=subtotal;
-
+ if(discount>subtotalDisplay) discount=subtotalDisplay;
  discountInput.value=discount;
+ const grandDisplay=subtotalDisplay-discount;
+ document.getElementById('billSubtotal').value=formatCurrency(subtotalDisplay,currency);
+ document.getElementById('billGrandTotal').value=formatCurrency(grandDisplay,currency);
 
- const grandTotal=subtotal-discount;
- const rates=getCommissionRates();
-
- document.getElementById('billSubtotal').value=rupiah(subtotal);
- document.getElementById('billGrandTotal').value=rupiah(grandTotal);
-
- document.getElementById('guideAmount').textContent=
-  rupiah(grandTotal*rates.guide/100);
-
- document.getElementById('driverAmount').textContent=
-  rupiah(grandTotal*rates.driver/100);
-  updateMixedPaymentSummary();
 }
 
 function saveTransaction(){
-  if(!['owner','cashier'].includes(localStorage.getItem('jewelryLoginRole'))){
-  alert('Please login before saving a transaction.');
-  return;
- }
-  
+ if(!['owner','cashier'].includes(localStorage.getItem('jewelryLoginRole'))){alert('Please login before saving a transaction.');return;}
  const sales=document.getElementById('salesName').value.trim();
  const agentId=document.getElementById('billAgent').value;
  const agent=agents.find(a=>a.id===agentId);
  const date=document.getElementById('billDate').value;
  const payment=document.getElementById('billPayment').value;
- const discount=Number(document.getElementById('billDiscount').value)||0;
- const subtotal=getBillSubtotal();
-
- if(billCart.length===0){
-  alert('Please add at least one item.');
-  return;
- }
-
- if(!sales||!agent||!date||!payment){
-  alert('Please complete Sales Name, Agent, Date and Payment Method.');
-  return;
- }
-
- if(!Number.isFinite(discount)||discount<0||discount>subtotal){
-  alert('Discount cannot exceed Subtotal.');
-  return;
- }
-
+ const currency=document.getElementById('billCurrency').value;
+ const discountDisplay=Number(document.getElementById('billDiscount').value)||0;
+ const subtotalUSD=getBillSubtotal();
+ const rate=getCurrencyRate(currency);
+ if(!billCart.length){alert('Please add at least one item.');return;}
+ if(!sales||!agent||!date||!payment){alert('Please complete Sales Name, Agent, Date and Payment Method.');return;}
+ if((currency!=='USD' && rate<=0) || discountDisplay<0 || discountDisplay>subtotalUSD*rate){alert('Please set a valid exchange rate and discount.');return;}
  const rates=getCommissionRates();
-
- if(!Number.isFinite(rates.guide)||!Number.isFinite(rates.driver)||
-    rates.guide<0||rates.driver<0||rates.guide>100||rates.driver>100){
-  alert('Please enter valid commission percentages (0â100).');
-  return;
- }
-
- const grandTotal=subtotal-discount;
- 
- const paidIDR=Number(document.getElementById('paidIDR').value)||0;
- const paidUSD=Number(document.getElementById('paidUSD').value)||0;
- const paidJPY=Number(document.getElementById('paidJPY').value)||0;
-
+ if(rates.guide<0||rates.driver<0||rates.guide>100||rates.driver>100){alert('Please enter valid commission percentages (0â100).');return;}
+ const subtotalIDR=Math.round(subtotalUSD*(Number(localStorage.getItem('jewelryUSDRate'))||0));
+ const discountUSD=discountDisplay/rate;
+ const discountIDR=Math.round(discountUSD*(Number(localStorage.getItem('jewelryUSDRate'))||0));
+ const grandTotalIDR=Math.max(0,subtotalIDR-discountIDR);
+ const grandDisplay=subtotalUSD*rate-discountDisplay;
  const usdRate=Number(localStorage.getItem('jewelryUSDRate'))||0;
  const jpyRate=Number(localStorage.getItem('jewelryJPYRate'))||0;
-
- if(paidIDR<0||paidUSD<0||paidJPY<0){
-  alert('Payment amounts cannot be negative.');
-  return;
- }
-
- if(paidUSD>0&&usdRate<=0){
-  alert('Please set a valid USD exchange rate.');
-  return;
- }
-
- if(paidJPY>0&&jpyRate<=0){
-  alert('Please set a valid JPY exchange rate.');
-  return;
- }
-
- const totalPaidIDR=Math.round(paidIDR+(paidUSD*usdRate)+(paidJPY*jpyRate));
- const paymentDifference=totalPaidIDR-grandTotal;
-
- if(paymentDifference<0){
-  alert('Payment is insufficient. Please complete the payment.');
-  return;
- }
-
- const paymentDetails={
-  IDR:paidIDR,
-  USD:paidUSD,
-  JPY:paidJPY,
-  usdRate,
-  jpyRate,
-  totalPaidIDR,
-  changeIDR:paymentDifference
- };
-
- const guideAmount=grandTotal*rates.guide/100;
- const driverAmount=grandTotal*rates.driver/100;
-
- const bill={
-  id:Date.now().toString(),
-  billNo:document.getElementById('billNo').value,
-  date,
-  sales,
-  agent:agent.name,
-  agentId:agent.id,
-  carPlate:document.getElementById('carPlate').value.trim(),
-  items:billCart.map(item=>({...item})),
-  subtotal,
-  discount,
-  grandTotal,
-  payment,
-  paymentDetails,
-  commissionMode:document.getElementById('commissionMode').value,
-  guidePercent:rates.guide,
-  guideAmount,
-  driverPercent:rates.driver,
-  driverAmount,
-  createdAt:new Date().toISOString()
- };
-  const saveButton=document.getElementById('saveTransactionBtn');
-
- if(saveButton.disabled) return;
-
- saveButton.disabled=true;
-
- // Reduce stock for catalog products only.
- bill.items.forEach(item=>{
-  if(!item.manual){
-   const product=products.find(p=>p.id===item.productId);
-   if(product){
-    product.stock=Number(product.stock||0)-item.qty;
-
-    stockHistory.push({
-     date:new Date().toLocaleString('id-ID'),
-     productId:product.id,
-     item:product.code+' - '+product.name,
-     type:'Sale',
-     qty:-item.qty,
-     notes:'Bill '+bill.billNo
-    });
-   }
-  }
- });
-
+ if(usdRate<=0){alert('Please set the USD exchange rate in Settings before saving a transaction.');return;}
+ if(currency==='JPY'&&jpyRate<=0){alert('Please set the JPY exchange rate in Settings before saving a transaction.');return;}
+ const paymentDetails={IDR:currency==='IDR'?Math.round(grandDisplay):0,USD:currency==='USD'?grandDisplay:0,JPY:currency==='JPY'?Math.round(grandDisplay):0,usdRate,jpyRate,totalPaidIDR:grandTotalIDR,changeIDR:0};
+ const guideAmount=grandTotalIDR*rates.guide/100;
+ const driverAmount=grandTotalIDR*rates.driver/100;
+ const bill={id:Date.now().toString(),billNo:document.getElementById('billNo').value,date,sales,agent:agent.name,agentId:agent.id,carPlate:document.getElementById('carPlate').value.trim(),items:billCart.map(item=>({...item,priceIDR:Math.round(item.price*usdRate),priceUSD:item.price,price:Math.round(item.price*usdRate)})),subtotal:subtotalIDR,discount:discountIDR,grandTotal:grandTotalIDR,displaySubtotal:subtotalUSD*rate,displayDiscount:discountDisplay,displayGrandTotal:grandDisplay,currency,currencyRate:rate,payment,paymentDetails,commissionMode:document.getElementById('commissionMode').value,guidePercent:rates.guide,guideAmount,driverPercent:rates.driver,driverAmount,createdAt:new Date().toISOString()};
+ const saveButton=document.getElementById('saveTransactionBtn'); if(saveButton.disabled)return; saveButton.disabled=true;
+ bill.items.forEach(item=>{if(!item.manual){const product=products.find(p=>p.id===item.productId);if(product){product.stock=Number(product.stock||0)-item.qty;stockHistory.push({date:new Date().toLocaleString('id-ID'),productId:product.id,item:product.code+' - '+product.name,type:'Sale',qty:-item.qty,notes:'Bill '+bill.billNo});}}});
  transactions.push(bill);
-
- localStorage.setItem('jewelryProducts',JSON.stringify(products));
- localStorage.setItem('jewelryStockHistory',JSON.stringify(stockHistory));
- localStorage.setItem('jewelryTransactions',JSON.stringify(transactions));
-
- renderProducts();
- renderStockManagement();
- renderBillOptions();
- renderTransactionHistory();
-
- alert('Transaction saved successfully. Bill No: '+bill.billNo);
-
-resetBill();
-updateDashboard();
-
-printBothReceipts(bill);
+ localStorage.setItem('jewelryProducts',JSON.stringify(products));localStorage.setItem('jewelryStockHistory',JSON.stringify(stockHistory));localStorage.setItem('jewelryTransactions',JSON.stringify(transactions));
+ renderProducts();renderStockManagement();renderBillOptions();renderTransactionHistory();alert('Transaction saved successfully. Bill No: '+bill.billNo);resetBill();updateDashboard();printBothReceipts(bill);
 }
+
 function resetBill(){
   document.getElementById('saveTransactionBtn').disabled=false;
  billCart=[];
@@ -1953,9 +1868,7 @@ function resetBill(){
  document.getElementById('billAgent').value='';
  document.getElementById('carPlate').value='';
  document.getElementById('billPayment').value='';
- document.getElementById('paidIDR').value=0;
-document.getElementById('paidUSD').value=0;
-document.getElementById('paidJPY').value=0;
+ if(document.getElementById('billCurrency')) document.getElementById('billCurrency').value='USD';
  document.getElementById('billDiscount').value=0;
  document.getElementById('commissionMode').value='normal';
  document.getElementById('guidePercent').value='';
@@ -1967,6 +1880,7 @@ document.getElementById('paidJPY').value=0;
 }
 
 document.getElementById('billDiscount').addEventListener('input',updateBillTotal);
+document.getElementById('billCurrency').addEventListener('change',()=>{renderBillCart();updateBillTotal();});
 document.getElementById('guidePercent').addEventListener('input',updateBillTotal);
 document.getElementById('driverPercent').addEventListener('input',updateBillTotal);
 
@@ -2064,16 +1978,12 @@ function viewTransaction(id){
    </table>
   </div>
 
-  <p>Subtotal: <b>${rupiah(t.subtotal)}</b></p>
-  <p>Discount: <b>${rupiah(t.discount)}</b></p>
-  <h3>Grand Total: ${rupiah(t.grandTotal)}</h3>
+  <p>Subtotal: <b>${formatCurrency(t.displaySubtotal??t.subtotal,t.currency||'IDR')}</b></p>
+  <p>Discount: <b>${formatCurrency(t.displayDiscount??t.discount,t.currency||'IDR')}</b></p>
+  <h3>Grand Total: ${formatCurrency(t.displayGrandTotal??t.grandTotal,t.currency||'IDR')}</h3>
 
   ${paymentBreakdown}
 
-  <hr>
-  <p>Commission Mode: ${escapeProductText(t.commissionMode||'-')}</p>
-  <p>Guide (${Number(t.guidePercent||0)}%): ${rupiah(t.guideAmount||0)}</p>
-  <p>Driver (${Number(t.driverPercent||0)}%): ${rupiah(t.driverAmount||0)}</p>
  `;
 
  document.getElementById('transactionDetail').hidden=false;
@@ -2338,8 +2248,8 @@ let salesNames = JSON.parse(
 
 function saveSalesName(){
 
-    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
-        alert('Only Owner can manage Sales Names.');
+    if(!['owner','cashier'].includes(localStorage.getItem('jewelryLoginRole'))){
+        alert('Please login first.');
         return;
     }
 
@@ -2593,63 +2503,23 @@ function restoreJewelryData(){
 }
 
 function saveExchangeRates(){
-
- const usd=Number(document.getElementById('usdRateInput').value);
- const jpy=Number(document.getElementById('jpyRateInput').value);
-
- if(!Number.isFinite(usd)||usd<=0||
-    !Number.isFinite(jpy)||jpy<=0){
-  alert('Please enter valid USD and JPY exchange rates.');
-  return;
- }
-
- localStorage.setItem('jewelryUSDRate',usd);
- localStorage.setItem('jewelryJPYRate',jpy);
- 
-updateMixedPaymentSummary();
- 
- alert('Exchange rates saved successfully.');
+ const usd=Number(document.getElementById('usdRateInput').value),jpy=Number(document.getElementById('jpyRateInput').value);
+ if(!Number.isFinite(usd)||usd<=0||!Number.isFinite(jpy)||jpy<=0){alert('Please enter valid USD and JPY exchange rates.');return;}
+ localStorage.setItem('jewelryUSDRate',usd);localStorage.setItem('jewelryJPYRate',jpy);updateMixedPaymentSummary();updateBillTotal();renderBillCart();alert('Exchange rates saved successfully.');
 }
-
 function loadExchangeRates(){
-
- const usd=localStorage.getItem('jewelryUSDRate');
- const jpy=localStorage.getItem('jewelryJPYRate');
-
- document.getElementById('usdRateInput').value=usd||'';
- document.getElementById('jpyRateInput').value=jpy||'';
+ const usd=localStorage.getItem('jewelryUSDRate'),jpy=localStorage.getItem('jewelryJPYRate');
+ document.getElementById('usdRateInput').value=usd||'';document.getElementById('jpyRateInput').value=jpy||'';updateMixedPaymentSummary();
 }
+
 
 function updateMixedPaymentSummary(){
-
  const usdRate=Number(localStorage.getItem('jewelryUSDRate'))||0;
  const jpyRate=Number(localStorage.getItem('jewelryJPYRate'))||0;
-
- const paidIDR=Number(document.getElementById('paidIDR').value)||0;
- const paidUSD=Number(document.getElementById('paidUSD').value)||0;
- const paidJPY=Number(document.getElementById('paidJPY').value)||0;
-
- const grandTotal=Math.max(0,
-  getBillSubtotal()-
-  (Number(document.getElementById('billDiscount').value)||0)
- );
-
- const totalPaid=Math.round(paidIDR+(paidUSD*usdRate)+(paidJPY*jpyRate));
- const difference=totalPaid-grandTotal;
-
- document.getElementById('currentUSDRate').textContent=
-  usdRate?rupiah(usdRate):'Not Set';
-
- document.getElementById('currentJPYRate').textContent=
-  jpyRate?rupiah(jpyRate):'Not Set';
-
- document.getElementById('totalPaidIDR').textContent=
-  rupiah(totalPaid);
-
- document.getElementById('paymentDifference').textContent=
-  difference>=0
-   ?'Change: '+rupiah(difference)
-   :'Shortfall: '+rupiah(Math.abs(difference));
+ const usd=document.getElementById('currentUSDRate');
+ const jpy=document.getElementById('currentJPYRate');
+ if(usd) usd.textContent=usdRate?rupiah(usdRate):'Not Set';
+ if(jpy) jpy.textContent=jpyRate?rupiah(jpyRate):'Not Set';
 }
 
 
@@ -2963,8 +2833,6 @@ const convertedPayment = filtered.reduce(
         <p>Subtotal: ${rupiah(subtotal)}</p>
         <p>Discount: ${rupiah(discount)}</p>
         <p><strong>Grand Total: ${rupiah(grandTotal)}</strong></p>
-        <p>Guide Commission: ${rupiah(guide)}</p>
-        <p>Driver Commission: ${rupiah(driver)}</p>
         <hr>
 <h4>Payment Currency Summary</h4>
 <p>Total IDR: ${rupiah(totalIDR)}</p>
@@ -3132,8 +3000,6 @@ const convertedPayment = filtered.reduce(
         <p>Subtotal: ${rupiah(subtotal)}</p>
         <p>Discount: ${rupiah(discount)}</p>
         <p><strong>Grand Total: ${rupiah(grandTotal)}</strong></p>
-        <p>Guide Commission: ${rupiah(guide)}</p>
-        <p>Driver Commission: ${rupiah(driver)}</p>
         <hr>
 <h4>Payment Currency Summary</h4>
 <p>Total IDR: ${rupiah(totalIDR)}</p>
@@ -3162,8 +3028,6 @@ const convertedPayment = filtered.reduce(
                     <th>IDR Paid</th>
                     <th>USD Paid</th>
                     <th>JPY Paid</th>
-                    <th>Guide Commission</th>
-                    <th>Driver Commission</th>
                 </tr>
             </thead>
             <tbody>
@@ -3177,8 +3041,6 @@ const convertedPayment = filtered.reduce(
                         <td>${rupiah(t.paymentDetails?.IDR||0)}</td>
                         <td>$${Number(t.paymentDetails?.USD||0).toFixed(2)}</td>
                         <td>Â¥${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
-                        <td>${rupiah(t.guideAmount)}</td>
-                        <td>${rupiah(t.driverAmount)}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -3239,7 +3101,7 @@ function login(){
 
  localStorage.setItem('jewelryLoginRole', role);
 
- ['menuProducts','menuStock','menuAgents'].forEach(id=>{
+ ['menuProducts','menuStock'].forEach(id=>{
   const menu = document.getElementById(id);
   if(menu){
    menu.style.display = role === 'owner' ? '' : 'none';
@@ -3336,28 +3198,22 @@ async function printCustomerReceipt(bill){
    receipt += line + '\n';
   });
 
-  receipt +=
-   item.qty + ' x ' + rupiah(item.price) +
-   ' = ' + rupiah(item.price * item.qty) + '\n';
+  const itemPrice= bill.currency==='USD' ? Number(item.priceUSD??(item.price/(bill.paymentDetails?.usdRate||1))) : bill.currency==='JPY' ? Number(item.priceUSD??(item.price/(bill.paymentDetails?.usdRate||1)))*(bill.paymentDetails?.usdRate||1)/(bill.paymentDetails?.jpyRate||1) : Number(item.price);
+  receipt += item.qty + ' x ' + formatCurrency(itemPrice,bill.currency||'IDR') + ' = ' + formatCurrency(itemPrice*item.qty,bill.currency||'IDR') + '\n';
  });
 
  receipt += separator + '\n';
- receipt += 'Subtotal: ' + rupiah(bill.subtotal) + '\n';
- receipt += 'Discount: ' + rupiah(bill.discount) + '\n';
+ receipt += 'Subtotal: ' + formatCurrency(bill.displaySubtotal??bill.subtotal,bill.currency||'IDR') + '\n';
+ receipt += 'Discount: ' + formatCurrency(bill.displayDiscount??bill.discount,bill.currency||'IDR') + '\n';
  receipt += separator + '\n';
  receipt += 'GRAND TOTAL\n';
- receipt += rupiah(bill.grandTotal) + '\n';
+ receipt += formatCurrency(bill.displayGrandTotal??bill.grandTotal,bill.currency||'IDR') + '\n';
  receipt += separator + '\n';
 
- receipt += 'PAYMENT BREAKDOWN\n';
- receipt += 'IDR: ' + rupiah(pd.IDR || 0) + '\n';
- receipt += 'USD: $' + Number(pd.USD || 0).toFixed(2) + '\n';
- receipt += 'USD Rate: ' + rupiah(pd.usdRate || 0) + '\n';
- receipt += 'JPY: ' + Number(pd.JPY || 0).toFixed(2) + '\n';
- receipt += 'JPY Rate: ' + rupiah(pd.jpyRate || 0) + '\n';
- receipt += 'Total Paid: ' + rupiah(pd.totalPaidIDR || 0) + '\n';
- receipt += 'Change: ' + rupiah(pd.changeIDR || 0) + '\n';
- receipt += 'Payment: ' + (bill.payment || '-') + '\n';
+ receipt += 'CURRENCY: ' + (bill.currency||'IDR') + '\n';
+ receipt += 'USD RATE: 1 USD = ' + rupiah(pd.usdRate||0) + '\n';
+ receipt += 'JPY RATE: 1 JPY = ' + rupiah(pd.jpyRate||0) + '\n';
+ receipt += 'PAYMENT: ' + (bill.payment || '-') + '\n';
 
  receipt += separator + '\n';
  receipt += 'Thank you for your purchase!\n';
@@ -3432,17 +3288,16 @@ async function printInternalReceipt(bill){
    receipt += line + '\n';
   });
 
-  receipt +=
-   item.qty + ' x ' + rupiah(item.price) +
-   ' = ' + rupiah(item.price * item.qty) + '\n';
+  const itemPrice= bill.currency==='USD' ? Number(item.priceUSD??(item.price/(bill.paymentDetails?.usdRate||1))) : bill.currency==='JPY' ? Number(item.priceUSD??(item.price/(bill.paymentDetails?.usdRate||1)))*(bill.paymentDetails?.usdRate||1)/(bill.paymentDetails?.jpyRate||1) : Number(item.price);
+  receipt += item.qty + ' x ' + formatCurrency(itemPrice,bill.currency||'IDR') + ' = ' + formatCurrency(itemPrice*item.qty,bill.currency||'IDR') + '\n';
  });
 
  receipt += separator + '\n';
- receipt += 'Subtotal: ' + rupiah(bill.subtotal) + '\n';
- receipt += 'Discount: ' + rupiah(bill.discount) + '\n';
+ receipt += 'Subtotal: ' + formatCurrency(bill.displaySubtotal??bill.subtotal,bill.currency||'IDR') + '\n';
+ receipt += 'Discount: ' + formatCurrency(bill.displayDiscount??bill.discount,bill.currency||'IDR') + '\n';
  receipt += separator + '\n';
  receipt += 'GRAND TOTAL\n';
- receipt += rupiah(bill.grandTotal) + '\n';
+ receipt += formatCurrency(bill.displayGrandTotal??bill.grandTotal,bill.currency||'IDR') + '\n';
  receipt += separator + '\n';
 
  receipt += 'PAYMENT BREAKDOWN\n';
@@ -3602,5 +3457,3 @@ function printReceiptContent(content,title){
 
 </body>
 </html>
-
-
