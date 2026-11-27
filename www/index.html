@@ -3579,10 +3579,16 @@ async function testPrinter(printerId){
         'Test successful!\n\n';
 
     try{
-        await BluetoothPrinter.print({
-            printerId: printerId,
-            text: text
-        });
+        const width = printerId === 'printer1'
+    ? document.getElementById('printer1Width').value
+    : document.getElementById('printer2Width').value;
+
+await BluetoothPrinter.print({
+    printerId: printerId,
+    text: text,
+    logoBase64: localStorage.getItem('jewelryStoreLogo') || '',
+    paperWidth: Number(width)
+});
 
         alert('Test print sent successfully.');
 
@@ -4123,8 +4129,10 @@ async function printCustomerReceipt(bill){
  try{
   await BluetoothPrinter.print({
    printerId: 'printer1',
-   text: receipt
-  });
+   text: receipt,
+   logoBase64: localStorage.getItem('jewelryStoreLogo') || '',
+   paperWidth: Number(width)
+});
 
   alert('Customer Receipt sent to Printer 1.');
   
@@ -4230,8 +4238,10 @@ async function printInternalReceipt(bill){
  try{
   await BluetoothPrinter.print({
    printerId: 'printer2',
-   text: receipt
-  });
+   text: receipt,
+   logoBase64: localStorage.getItem('jewelryStoreLogo') || '',
+   paperWidth: Number(width)
+});
 
   alert('Internal Receipt sent to Printer 2.');
   
