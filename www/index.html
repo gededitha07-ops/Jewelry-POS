@@ -436,28 +436,23 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  </div>
 
  <div class="card">
-  <h3>Payment & Discount</h3>
+  <h3>Payment</h3>
 
-  <label>Subtotal</label>
+  <label>Total Item Price / Subtotal</label>
   <input id="billSubtotal" value="Rp 0" readonly>
 
-<label>Select Discount Preset</label>
-<select id="billDiscountPreset">
- <option value="">No Preset Discount</option>
-</select>
+  <label>Manual Final Total (Negotiated Price)</label>
+  <input type="number" id="billFinalTotal" min="0" step="any" placeholder="Enter final price agreed with guest">
+  <small>Enter the final amount the guest will pay. Total discount is calculated automatically.</small>
 
-<button class="btn" onclick="applyDiscountPreset()">
- APPLY DISCOUNT
-</button>
-
-  <label>Discount (Nominal - Selected Currency)</label>
-  <input type="number" id="billDiscount" min="0" value="0">
+  <label>Total Discount (Automatic)</label>
+  <input id="billDiscountDisplay" value="Rp 0" readonly>
 
   <label>Grand Total</label>
   <input id="billGrandTotal" value="Rp 0" readonly>
 
   <label>Transaction Currency (choose the currency used for this bill)</label>
-  <select id="billCurrency" onchange="renderBillCart();updateBillTotal()">
+  <select id="billCurrency" onchange="renderBillCart();updateBillTotal(true)">
    <option value="USD">USD ($)</option>
    <option value="IDR">IDR (Rp)</option>
    <option value="JPY">JPY (Â¥)</option>
@@ -496,7 +491,6 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   <h3>Transaction Summary</h3>
 
   <button class="btn" id="saveTransactionBtn" onclick="saveTransaction()">SAVE TRANSACTION</button>
-  <button class="btn dark" onclick="resetBill()">NEW BILL / RESET</button>
  </div>
 </section>
 
@@ -877,38 +871,6 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  </button>
 </div>
 
-<div class="card">
- <h3>Discount Settings</h3>
-
- <label>Discount Name</label>
- <input id="discountName" placeholder="Example: VIP Discount">
-
- <label>Discount Type</label>
- <select id="discountType">
-  <option value="percent">Percentage (%)</option>
-  <option value="amount">Fixed Amount (Transaction Currency)</option>
- </select>
-
- <label>Discount Value</label>
- <input type="number" id="discountValue" min="0" placeholder="Enter discount value">
-
- <button class="btn" onclick="saveDiscountPreset()">
-  ADD DISCOUNT
- </button>
-
- <h3>Discount Presets</h3>
- <table>
-  <thead>
-   <tr>
-    <th>Name</th>
-    <th>Type</th>
-    <th>Value</th>
-    <th>Action</th>
-   </tr>
-  </thead>
-  <tbody id="discountPresetTable"></tbody>
- </table>
-</div>
 
 <div class="card" id="salesNameSettingsCard">
  <h3>Sales Name Settings</h3>
@@ -1058,6 +1020,34 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
 
 </main>
 </div>
+
+
+<div id="receiptPreviewModal" aria-hidden="true" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(8,15,30,.82);padding:16px;overflow:auto;align-items:flex-start;justify-content:center;">
+ <div style="background:#f4f6fa;color:#172033;width:min(1100px,100%);margin:20px auto;padding:18px;border-radius:16px;box-shadow:0 18px 60px rgba(0,0,0,.35);">
+  <h2 style="margin-top:0">Receipt Preview</h2>
+  <p>Please check the receipt details before printing.</p>
+  <div id="receiptPreviewContent"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:18px">
+   <button class="btn" type="button" onclick="printPreviewReceipts()">PRINT BOTH RECEIPTS</button>
+   <button class="btn dark" type="button" onclick="startNewTransaction()">NEW TRANSACTION</button>
+  </div>
+ </div>
+</div>
+<style>
+#receiptPreviewModal .receipt-preview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+#receiptPreviewModal .receipt-preview-paper{background:#fff;color:#111;padding:16px;max-width:420px;width:100%;margin:0 auto;box-shadow:0 2px 12px rgba(0,0,0,.12);font-family:Arial,sans-serif;font-size:13px;box-sizing:border-box}
+#receiptPreviewModal .receipt-preview-paper h3,#receiptPreviewModal .receipt-preview-paper h4{text-align:center;margin:5px 0 10px}
+#receiptPreviewModal .receipt-preview-paper p{text-align:center;line-height:1.55}
+#receiptPreviewModal .receipt-preview-paper table{width:100%;border-collapse:collapse}
+#receiptPreviewModal .receipt-preview-paper th,#receiptPreviewModal .receipt-preview-paper td{padding:7px 3px;border-bottom:1px dashed #aaa;text-align:left;vertical-align:top}
+#receiptPreviewModal .receipt-preview-paper td:last-child,#receiptPreviewModal .receipt-preview-paper th:last-child{text-align:right;white-space:nowrap}
+#receiptPreviewModal .receipt-preview-paper small{display:block;color:#555;margin-top:3px}
+#receiptPreviewModal .receipt-preview-totals{margin-top:12px;border-top:1px dashed #888;padding-top:6px}
+#receiptPreviewModal .receipt-preview-totals p{display:flex;justify-content:space-between;text-align:left;margin:7px 0}
+#receiptPreviewModal .receipt-preview-totals .receipt-grand{font-size:16px;font-weight:bold;border-top:1px solid #333;padding-top:8px}
+#receiptPreviewModal .receipt-thanks{font-weight:bold;margin-top:18px}
+@media(max-width:700px){#receiptPreviewModal .receipt-preview-grid{grid-template-columns:1fr}#receiptPreviewModal{padding:8px}#receiptPreviewModal>div{padding:12px;margin:5px auto}}
+</style>
 
 <script>
 
@@ -1572,7 +1562,6 @@ let billCart = [];
 
 // Initialize all lists before cashier UI renders them.
 let salesNames = readJewelryList('jewelrySalesNames');
-let discountPresets = readJewelryList('jewelryDiscountPresets');
 
 function rupiah(value){
  return 'Rp ' + Number(value||0).toLocaleString('id-ID');
@@ -1626,7 +1615,6 @@ function renderBillOptions(){
     </option>
    `).join('');
  }
- renderBillDiscountPresets();
  renderSalesNameOptions();
 }
 
@@ -1770,20 +1758,29 @@ function toggleCommissionMode(){
  updateBillTotal();
 }
 
-function updateBillTotal(){
+function updateBillTotal(resetFinal=false){
  const currency=document.getElementById('billCurrency')?.value||'USD';
  const subtotalUSD=getBillSubtotal();
  const rate=getCurrencyRate(currency);
- const discountInput=document.getElementById('billDiscount');
- let discount=Number(discountInput.value)||0;
  const subtotalDisplay=subtotalUSD*rate;
- if(discount<0) discount=0;
- if(discount>subtotalDisplay) discount=subtotalDisplay;
- discountInput.value=discount;
- const grandDisplay=subtotalDisplay-discount;
+ const finalInput=document.getElementById('billFinalTotal');
+ let finalDisplay=Number(finalInput.value);
+ const previousSubtotal=Number(finalInput.dataset.lastSubtotal);
+ if(resetFinal || finalInput.value.trim()==='' || !Number.isFinite(finalDisplay) || (Number.isFinite(previousSubtotal) && finalDisplay===previousSubtotal)){
+  finalDisplay=subtotalDisplay;
+ }
+ if(subtotalDisplay===0){
+  finalInput.value='';
+  finalDisplay=0;
+ }else{
+  finalDisplay=Math.max(0,Math.min(finalDisplay,subtotalDisplay));
+  finalInput.value=currency==='JPY' || currency==='IDR' ? String(Math.round(finalDisplay)) : String(Number(finalDisplay.toFixed(2)));
+ }
+ finalInput.dataset.lastSubtotal=String(subtotalDisplay);
+ const discountDisplay=Math.max(0,subtotalDisplay-finalDisplay);
  document.getElementById('billSubtotal').value=formatCurrency(subtotalDisplay,currency);
- document.getElementById('billGrandTotal').value=formatCurrency(grandDisplay,currency);
-
+ document.getElementById('billDiscountDisplay').value=formatCurrency(discountDisplay,currency);
+ document.getElementById('billGrandTotal').value=formatCurrency(finalDisplay,currency);
 }
 
 function saveTransaction(){
@@ -1794,21 +1791,25 @@ function saveTransaction(){
  const date=document.getElementById('billDate').value;
  const payment=document.getElementById('billPayment').value;
  const currency=document.getElementById('billCurrency').value;
- const discountDisplay=Number(document.getElementById('billDiscount').value)||0;
  const subtotalUSD=getBillSubtotal();
  const rate=getCurrencyRate(currency);
+ const subtotalDisplay=subtotalUSD*rate;
+ const finalDisplayInput=document.getElementById('billFinalTotal').value.trim();
+ const finalDisplay=Number(finalDisplayInput);
+ if(finalDisplayInput==='' || !Number.isFinite(finalDisplay)){alert('Please enter the negotiated final total.');return;}
+ if(finalDisplay<0 || finalDisplay>subtotalDisplay){alert('Final total must be between zero and the subtotal.');return;}
+ const discountDisplay=subtotalDisplay-finalDisplay;
  if(!billCart.length){alert('Please add at least one item.');return;}
  if(!sales||!agent||!date||!payment){alert('Please complete Sales Name, Agent, Date and Payment Method.');return;}
- if((currency!=='USD' && rate<=0) || discountDisplay<0 || discountDisplay>subtotalUSD*rate){alert('Please set a valid exchange rate and discount.');return;}
+ if((currency!=='USD' && rate<=0)){alert('Please set a valid exchange rate in Settings.');return;}
  const rates=getCommissionRates();
  if(rates.guide<0||rates.driver<0||rates.guide>100||rates.driver>100){alert('Please enter valid commission percentages (0â100).');return;}
  const usdRate=Number(localStorage.getItem('jewelryUSDRate'))||0;
  const jpyRate=Number(localStorage.getItem('jewelryJPYRate'))||0;
  const subtotalIDR=Math.round(subtotalUSD*usdRate);
- const discountUSD=discountDisplay/rate;
- const discountIDR=Math.round(discountUSD*usdRate);
- const grandTotalIDR=Math.max(0,subtotalIDR-discountIDR);
- const grandDisplay=subtotalUSD*rate-discountDisplay;
+ const grandDisplay=finalDisplay;
+ const grandTotalIDR=Math.round((grandDisplay/rate)*usdRate);
+ const discountIDR=Math.max(0,subtotalIDR-grandTotalIDR);
  if(usdRate<=0){alert('Please set the USD exchange rate in Settings before saving a transaction.');return;}
  if(currency==='JPY'&&jpyRate<=0){alert('Please set the JPY exchange rate in Settings before saving a transaction.');return;}
  const paymentDetails={IDR:currency==='IDR'?Math.round(grandDisplay):0,USD:currency==='USD'?grandDisplay:0,JPY:currency==='JPY'?Math.round(grandDisplay):0,usdRate,jpyRate,totalPaidIDR:grandTotalIDR,changeIDR:0};
@@ -1819,7 +1820,8 @@ function saveTransaction(){
  bill.items.forEach(item=>{if(!item.manual){const product=products.find(p=>p.id===item.productId);if(product){product.stock=Number(product.stock||0)-item.qty;stockHistory.push({date:new Date().toLocaleString('id-ID'),productId:product.id,item:product.code+' - '+product.name,type:'Sale',qty:-item.qty,notes:'Bill '+bill.billNo});}}});
  transactions.push(bill);
  localStorage.setItem('jewelryProducts',JSON.stringify(products));localStorage.setItem('jewelryStockHistory',JSON.stringify(stockHistory));localStorage.setItem('jewelryTransactions',JSON.stringify(transactions));
- renderProducts();renderStockManagement();renderBillOptions();renderTransactionHistory();alert('Transaction saved successfully. Bill No: '+bill.billNo);resetBill();updateDashboard();printBothReceipts(bill);
+ renderProducts();renderStockManagement();renderBillOptions();renderTransactionHistory();updateDashboard();
+ showReceiptPreview(bill);
 }
 
 function resetBill(){
@@ -1830,7 +1832,7 @@ function resetBill(){
  document.getElementById('carPlate').value='';
  document.getElementById('billPayment').value='';
  if(document.getElementById('billCurrency')) document.getElementById('billCurrency').value='USD';
- document.getElementById('billDiscount').value=0;
+ document.getElementById('billFinalTotal').value='';
  document.getElementById('commissionMode').value='normal';
  document.getElementById('guidePercent').value='';
  document.getElementById('driverPercent').value='';
@@ -1840,8 +1842,8 @@ function resetBill(){
  updateMixedPaymentSummary();
 }
 
-document.getElementById('billDiscount').addEventListener('input',updateBillTotal);
-document.getElementById('billCurrency').addEventListener('change',()=>{renderBillCart();updateBillTotal();});
+document.getElementById('billFinalTotal').addEventListener('input',updateBillTotal);
+document.getElementById('billCurrency').addEventListener('change',()=>{renderBillCart();updateBillTotal(true);});
 document.getElementById('guidePercent').addEventListener('input',updateBillTotal);
 document.getElementById('driverPercent').addEventListener('input',updateBillTotal);
 
@@ -1907,7 +1909,7 @@ function viewTransaction(id){
   <p>IDR: ${rupiah(pd.IDR)}</p>
   <p>USD: $${Number(pd.USD).toFixed(2)}</p>
   <p>USD Rate: ${rupiah(pd.usdRate)}</p>
-  <p>JPY: Â¥${Number(pd.JPY).toFixed(2)}</p>
+  <p>JPY: Â¥${Math.round(Number(pd.JPY)||0).toLocaleString('en-US')}</p>
   <p>JPY Rate: ${rupiah(pd.jpyRate)}</p>
   <p>Total Paid: <b>${rupiah(pd.totalPaidIDR)}</b></p>
   <p>Change: <b>${rupiah(pd.changeIDR)}</b></p>
@@ -2064,144 +2066,6 @@ function changeCashierPin(){
 }
 
 
-
-function saveDiscountPreset(){
-
-    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
-        alert('Only Owner can manage discount presets.');
-        return;
-    }
-
-    const name = document.getElementById('discountName').value.trim();
-    const type = document.getElementById('discountType').value;
-    const value = Number(document.getElementById('discountValue').value);
-
-    if(!name){
-        alert('Please enter discount name.');
-        return;
-    }
-
-    if(!Number.isFinite(value) || value <= 0){
-        alert('Please enter a valid discount value.');
-        return;
-    }
-
-    if(type === 'percent' && value > 100){
-        alert('Percentage cannot exceed 100%.');
-        return;
-    }
-
-    discountPresets.push({
-        id: Date.now().toString(),
-        name: name,
-        type: type,
-        value: value
-    });
-
-    localStorage.setItem(
-        'jewelryDiscountPresets',
-        JSON.stringify(discountPresets)
-    );
-
-    document.getElementById('discountName').value = '';
-    document.getElementById('discountValue').value = '';
-
-    renderDiscountPresets();
-
-    alert('Discount preset saved successfully.');
-}
-
-
-function renderDiscountPresets(){
-    const table = document.getElementById('discountPresetTable');
-
-    if(!table) return;
-
-    if(discountPresets.length === 0){
-        table.innerHTML = '<tr><td colspan="4">No discount presets yet.</td></tr>';
-        return;
-    }
-
-    table.innerHTML = discountPresets.map(item => `
-        <tr>
-            <td>${escapeProductText(item.name)}</td>
-            <td>${item.type === 'percent' ? 'Percentage' : 'Fixed Amount'}</td>
-            <td>${item.type === 'percent' ? item.value + '%' : rupiah(item.value)}</td>
-            <td>
-                <button class="btn danger"
-                    onclick="deleteDiscountPreset('${item.id}')">
-                    DELETE
-                </button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-
-function deleteDiscountPreset(id){
-
-    if(localStorage.getItem('jewelryLoginRole')!=='owner'){
-        alert('Only Owner can delete discount presets.');
-        return;
-    }
-
-    if(!confirm('Delete this discount preset?')) return;
-
-    discountPresets = discountPresets.filter(item => item.id !== id);
-
-    localStorage.setItem(
-        'jewelryDiscountPresets',
-        JSON.stringify(discountPresets)
-    );
-
-    renderDiscountPresets();
-}
-
-renderDiscountPresets();
-
-
-function renderBillDiscountPresets(){
-    const select = document.getElementById('billDiscountPreset');
-    if(!select) return;
-
-    select.innerHTML = `
-        <option value="">No Preset Discount</option>
-        ${discountPresets.map(item => `
-            <option value="${item.id}">
-                ${escapeProductText(item.name)}
-            </option>
-        `).join('')}
-    `;
-}
-
-function applyDiscountPreset(){
-    const id = document.getElementById('billDiscountPreset').value;
-
-    if(!id){
-        alert('Please select a discount preset.');
-        return;
-    }
-
-    const preset = discountPresets.find(item => item.id === id);
-    if(!preset) return;
-
-    let discount = 0;
-
-    if(preset.type === 'percent'){
-        discount = getBillSubtotal() * preset.value / 100;
-    }else{
-        discount = preset.value;
-    }
-
-    discount = Math.min(discount, getBillSubtotal());
-
-    document.getElementById('billDiscount').value =
-        Math.round(discount);
-
-    updateBillTotal();
-
-    alert('Discount applied successfully.');
-}
 
 function saveSalesName(){
  const role=localStorage.getItem('jewelryLoginRole');
@@ -2724,7 +2588,7 @@ const convertedPayment = filtered.reduce(
 <h4>Payment Currency Summary</h4>
 <p>Total IDR: ${rupiah(totalIDR)}</p>
 <p>Total USD: $${totalUSD.toFixed(2)}</p>
-<p>Total JPY: Â¥${totalJPY.toFixed(2)}</p>
+<p>Total JPY: Â¥${Math.round(totalJPY).toLocaleString('en-US')}</p>
 <p>Total Payment Converted to IDR:
  <strong>${rupiah(convertedPayment)}</strong>
 </p>
@@ -2891,7 +2755,7 @@ const convertedPayment = filtered.reduce(
 <h4>Payment Currency Summary</h4>
 <p>Total IDR: ${rupiah(totalIDR)}</p>
 <p>Total USD: $${totalUSD.toFixed(2)}</p>
-<p>Total JPY: Â¥${totalJPY.toFixed(2)}</p>
+<p>Total JPY: Â¥${Math.round(totalJPY).toLocaleString('en-US')}</p>
 <p>Total Payment Converted to IDR:
  <strong>${rupiah(convertedPayment)}</strong>
 </p>
@@ -3190,7 +3054,7 @@ async function printInternalReceipt(bill){
  receipt += 'PAYMENT BREAKDOWN\n';
  receipt += 'IDR: ' + rupiah(pd.IDR || 0) + '\n';
  receipt += 'USD: $' + Number(pd.USD || 0).toFixed(2) + '\n';
- receipt += 'JPY: ' + Number(pd.JPY || 0).toFixed(2) + '\n';
+ receipt += 'JPY: Â¥' + Number(pd.JPY || 0).toLocaleString('en-US',{maximumFractionDigits:0}) + '\n';
  receipt += 'Total Paid: ' + rupiah(pd.totalPaidIDR || 0) + '\n';
  receipt += 'Change: ' + rupiah(pd.changeIDR || 0) + '\n';
 
@@ -3338,6 +3202,42 @@ function printReceiptContent(content,title){
   printWindow.focus();
   printWindow.print();
  };
+}
+
+
+// Show both receipt layouts on screen before sending anything to the printers.
+function showReceiptPreview(bill){
+ const modal=document.getElementById('receiptPreviewModal');
+ const content=document.getElementById('receiptPreviewContent');
+ if(!modal || !content) return;
+ const currency=bill.currency||'IDR';
+ const fmt=value=>formatCurrency(value,currency);
+ const safe=value=>escapeProductText(value==null?'':String(value));
+ const rows=(bill.items||[]).map(item=>{
+  const usd=Number(item.priceUSD??(Number(item.price||0)/(Number(bill.paymentDetails?.usdRate)||1)));
+  let unit=usd;
+  if(currency==='IDR') unit=usd*(Number(bill.paymentDetails?.usdRate)||0);
+  if(currency==='JPY') unit=usd*(Number(bill.paymentDetails?.usdRate)||0)/(Number(bill.paymentDetails?.jpyRate)||1);
+  return `<tr><td>${safe(item.name)}<small>${Number(item.qty||0)} Ã ${fmt(unit)}</small></td><td>${fmt(unit*Number(item.qty||0))}</td></tr>`;
+ }).join('');
+ const logo=localStorage.getItem('jewelryStoreLogo')||'';
+ const logoHtml=logo?`<img src="${logo}" alt="Store logo" style="max-width:90px;max-height:65px;object-fit:contain;display:block;margin:0 auto 8px">`:'';
+ const receipt=(heading,internal=false)=>`<div class="receipt-preview-paper">${logoHtml}<h3>${safe(localStorage.getItem('jewelryStoreName')||'Jewelry POS')}</h3><h4>${heading}</h4><p>Bill No: ${safe(bill.billNo)}<br>Date: ${safe(bill.date)}<br>Sales: ${safe(bill.sales)}<br>Agent: ${safe(bill.agent)}<br>Car Plate: ${safe(bill.carPlate||'-')}</p><table><thead><tr><th>Item</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><div class="receipt-preview-totals"><p>Subtotal <b>${fmt(bill.displaySubtotal??bill.subtotal)}</b></p><p>Discount <b>${fmt(bill.displayDiscount??bill.discount)}</b></p><p class="receipt-grand">GRAND TOTAL <b>${fmt(bill.displayGrandTotal??bill.grandTotal)}</b></p></div><p>Currency: ${safe(currency)}<br>Payment: ${safe(bill.payment||'-')}</p>${internal?`<hr><h4>COMMISSION DETAILS</h4><p>Guide (${Number(bill.guidePercent||0)}%): <b>${rupiah(bill.guideAmount||0)}</b><br>Driver (${Number(bill.driverPercent||0)}%): <b>${rupiah(bill.driverAmount||0)}</b></p><p>TOTAL COMMISSION: <b>${rupiah(Number(bill.guideAmount||0)+Number(bill.driverAmount||0))}</b></p>`:`<p class="receipt-thanks">Thank you for your purchase!</p>`}</div>`;
+ content.innerHTML=`<div class="receipt-preview-grid">${receipt('CUSTOMER RECEIPT',false)}${receipt('INTERNAL RECEIPT',true)}</div>`;
+ modal.style.display='flex';
+ modal.setAttribute('aria-hidden','false');
+}
+
+async function printPreviewReceipts(){
+ const bill=transactions[transactions.length-1];
+ if(!bill){alert('No saved transaction found.');return;}
+ await printBothReceipts(bill);
+}
+
+function startNewTransaction(){
+ const modal=document.getElementById('receiptPreviewModal');
+ if(modal){modal.style.display='none';modal.setAttribute('aria-hidden','true');}
+ resetBill();
 }
 
 </script>
