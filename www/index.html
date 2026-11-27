@@ -3421,7 +3421,9 @@ function updateMixedPaymentSummary(){
 }
 
 
-const BluetoothPrinter = window.Capacitor?.Plugins?.BluetoothPrinter;
+const BluetoothPrinter = window.Capacitor?.registerPlugin
+    ? window.Capacitor.registerPlugin('BluetoothPrinter')
+    : window.Capacitor?.Plugins?.BluetoothPrinter;
 
 function savePrinterSettings(){
     const width1 = document.getElementById('printer1Width').value;
