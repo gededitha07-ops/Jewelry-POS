@@ -231,58 +231,7 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  
 <body>
 
-<div class="card">
- <h3>Backup & Restore</h3>
 
- <p>Save all Jewelry POS data into a backup file.</p>
-
- <button class="btn dark" onclick="backupJewelryData()">
-  BACKUP DATA
- </button>
-
- <label>Select Backup File</label>
- <input type="file" id="restoreFile" accept=".json,application/json">
-
- <button class="btn" onclick="restoreJewelryData()">
-  RESTORE DATA
- </button>
-</div>
-
- 
-<div class="card">
- <h3>Printer 1 - Customer Receipt</h3>
-
- <label>Paper Width</label>
- <select id="printer1Width">
-  <option value="58">58 mm</option>
-  <option value="80" selected>80 mm</option>
- </select>
- 
-<button class="btn" onclick="savePrinterSettings()">
- SAVE PRINTER SETTINGS
-</button>
- 
- <p>Bluetooth Printer</p>
- <p id="printer1Status">Not Connected</p>
-</div>
-
-<div class="card">
- <h3>Printer 2 - Internal Receipt</h3>
-
- <label>Paper Width</label>
- <select id="printer2Width">
-  <option value="58">58 mm</option>
-  <option value="80" selected>80 mm</option>
- </select>
-
- <p>Bluetooth Printer</p>
- <p id="printer2Status">Not Connected</p>
-</div>
-
-</section>
-
-</main>
-</div>
 <header class="topbar">
  <div class="brand">
   <img id="topLogo" alt="Logo" hidden>
@@ -342,16 +291,16 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
 </div>
 
 <nav class="sidebar">
- <button class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
- <button onclick="showPage('cashier',this)">🛒 Kasir</button>
- <button id="menuProducts" onclick="showPage('products',this)">💎 Data Barang</button>
- <button id="menuStock" onclick="showPage('stock',this)">📦 Management Stock</button>
- <button onclick="showPage('history',this)">📋 Riwayat</button>
- <button onclick="showPage('reports',this)">📊 Laporan</button>
- <button id="menuAgents" onclick="showPage('agents',this)">👥 Data Agent</button>
- <button onclick="showPage('settings',this)">⚙️ Settings</button>
+ <button class="active" onclick="showPage('dashboard',this)">ð  Dashboard</button>
+ <button onclick="showPage('cashier',this)">ð Kasir</button>
+ <button id="menuProducts" onclick="showPage('products',this)">ð Data Barang</button>
+ <button id="menuStock" onclick="showPage('stock',this)">ð¦ Management Stock</button>
+ <button onclick="showPage('history',this)">ð Riwayat</button>
+ <button onclick="showPage('reports',this)">ð Laporan</button>
+ <button id="menuAgents" onclick="showPage('agents',this)">ð¥ Data Agent</button>
+ <button onclick="showPage('settings',this)">âï¸ Settings</button>
  <button onclick="logout()" style="margin-top:20px;background:#8b2635;color:white;">
-  🚪 LOGOUT
+  ðª LOGOUT
  </button>
 </nav>
 
@@ -1460,7 +1409,7 @@ function saveStockMovement(){
   productId:product.id,
   item:product.code+' - '+product.name,
   type:typeName,
-  qty:type==='adjust'?`${oldStock} → ${qty}`:qty,
+  qty:type==='adjust'?`${oldStock} â ${qty}`:qty,
   notes
  });
 
@@ -1852,7 +1801,7 @@ function saveTransaction(){
 
  if(!Number.isFinite(rates.guide)||!Number.isFinite(rates.driver)||
     rates.guide<0||rates.driver<0||rates.guide>100||rates.driver>100){
-  alert('Please enter valid commission percentages (0–100).');
+  alert('Please enter valid commission percentages (0â100).');
   return;
  }
 
@@ -2051,7 +2000,7 @@ function viewTransaction(id){
   <p>IDR: ${rupiah(pd.IDR)}</p>
   <p>USD: $${Number(pd.USD).toFixed(2)}</p>
   <p>USD Rate: ${rupiah(pd.usdRate)}</p>
-  <p>JPY: ¥${Number(pd.JPY).toFixed(2)}</p>
+  <p>JPY: Â¥${Number(pd.JPY).toFixed(2)}</p>
   <p>JPY Rate: ${rupiah(pd.jpyRate)}</p>
   <p>Total Paid: <b>${rupiah(pd.totalPaidIDR)}</b></p>
   <p>Change: <b>${rupiah(pd.changeIDR)}</b></p>
@@ -2988,7 +2937,7 @@ const convertedPayment = filtered.reduce(
 <h4>Payment Currency Summary</h4>
 <p>Total IDR: ${rupiah(totalIDR)}</p>
 <p>Total USD: $${totalUSD.toFixed(2)}</p>
-<p>Total JPY: ¥${totalJPY.toFixed(2)}</p>
+<p>Total JPY: Â¥${totalJPY.toFixed(2)}</p>
 <p>Total Payment Converted to IDR:
  <strong>${rupiah(convertedPayment)}</strong>
 </p>
@@ -3030,7 +2979,7 @@ const convertedPayment = filtered.reduce(
 <td>${escapeProductText(t.payment||'-')}</td>
 <td>${rupiah(t.paymentDetails?.IDR||0)}</td>
 <td>$${Number(t.paymentDetails?.USD||0).toFixed(2)}</td>
-<td>¥${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
+<td>Â¥${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -3157,7 +3106,7 @@ const convertedPayment = filtered.reduce(
 <h4>Payment Currency Summary</h4>
 <p>Total IDR: ${rupiah(totalIDR)}</p>
 <p>Total USD: $${totalUSD.toFixed(2)}</p>
-<p>Total JPY: ¥${totalJPY.toFixed(2)}</p>
+<p>Total JPY: Â¥${totalJPY.toFixed(2)}</p>
 <p>Total Payment Converted to IDR:
  <strong>${rupiah(convertedPayment)}</strong>
 </p>
@@ -3195,7 +3144,7 @@ const convertedPayment = filtered.reduce(
                         <td>${rupiah(t.grandTotal)}</td>
                         <td>${rupiah(t.paymentDetails?.IDR||0)}</td>
                         <td>$${Number(t.paymentDetails?.USD||0).toFixed(2)}</td>
-                        <td>¥${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
+                        <td>Â¥${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
                         <td>${rupiah(t.guideAmount)}</td>
                         <td>${rupiah(t.driverAmount)}</td>
                     </tr>
@@ -3621,3 +3570,4 @@ function printReceiptContent(content,title){
 
 </body>
 </html>
+
