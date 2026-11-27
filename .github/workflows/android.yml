@@ -40,6 +40,30 @@ jobs:
 
       - name: Create Android Project
         run: npx cap add android
+        
+      - name: Add Bluetooth Permissions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          content = path.read_text()
+
+          permissions = """
+              <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+              <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+              <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+              <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+              <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+              <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+          """
+
+          if "android.permission.BLUETOOTH_CONNECT" not in content:
+              content = content.replace("<application", permissions + "\n    <application", 1)
+
+          path.write_text(content)
+          PY
+
 
       - name: Sync Android Project
         run: npx cap sync android
