@@ -3983,7 +3983,10 @@ function login(){
 
  const role=document.getElementById('loginRole').value;
  const pin=document.getElementById('loginPin').value;
- alert('PIN entered: [' + pin + ']');
+ alert(
+ 'PIN value: ' + JSON.stringify(pin) +
+ '\nPIN length: ' + pin.length
+);
 
  if(role!=='owner' && role!=='cashier'){
   alert('Invalid login role.');
