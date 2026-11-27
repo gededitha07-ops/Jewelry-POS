@@ -170,34 +170,44 @@ public class BluetoothPrinterPlugin extends Plugin {
     }
 
     @PluginMethod
-    public void disconnect(PluginCall call) {
-        String printerId = call.getString("printerId");
-
-        if (printerId == null) {
-            call.reject("Printer ID is required.");
-            return;
-        }
-
-        BluetoothSocket socket = connections.remove(printerId);
-
-        try {
-            if (socket != null) {
-                socket.close();
-            }
-
-            JSObject result = new JSObject();
-            result.put("printerId", printerId);
-            result.put("connected", false);
-            call.resolve(result);
-
-        } catch (Exception e) {
-            call.reject("Unable to disconnect printer: " + e.getMessage());
-        }
+public void disconnect(PluginCall call) {
+    if (getPermissionState("bluetooth") != PermissionState.GRANTED) {
+        call.reject("Bluetooth permission is required.");
+        return;
     }
+
+    String printerId = call.getString("printerId");
+
+    if (printerId == null) {
+        call.reject("Printer ID is required.");
+        return;
+    }
+
+    BluetoothSocket socket = connections.remove(printerId);
+
+    try {
+        if (socket != null) {
+            socket.close();
+        }
+
+        JSObject result = new JSObject();
+        result.put("printerId", printerId);
+        result.put("connected", false);
+        call.resolve(result);
+
+    } catch (Exception e) {
+        call.reject("Unable to disconnect printer: " + e.getMessage());
+    }
+}
 
     
 @PluginMethod
 public void print(PluginCall call) {
+    if (getPermissionState("bluetooth") != PermissionState.GRANTED) {
+        call.reject("Bluetooth permission is required before printing.");
+        return;
+    }
+
     String printerId = call.getString("printerId");
     String content = call.getString("text");
     String logoBase64 = call.getString("logoBase64");
@@ -287,10 +297,12 @@ private void printLogo(
     int height = Math.max(1, Math.round(original.getHeight() * scale));
 
     Bitmap bitmap = Bitmap.createScaledBitmap(
-        original, width, height, true
-    );
+    original, width, height, true
+);
 
+if (bitmap != original) {
     original.recycle();
+}
 
     int widthBytes = (width + 7) / 8;
 
