@@ -1754,13 +1754,33 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   <option value="58">58 mm</option>
   <option value="80" selected>80 mm</option>
  </select>
- 
-<button class="btn" onclick="savePrinterSettings()">
- SAVE PRINTER SETTINGS
-</button>
- 
- <p>Bluetooth Printer</p>
- <p id="printer1Status">Not Connected</p>
+
+ <label>Bluetooth Device</label>
+ <select id="printer1Device">
+  <option value="">Select Printer 1</option>
+ </select>
+
+ <button class="btn" onclick="loadBluetoothDevices()">
+  REFRESH DEVICES
+ </button>
+
+ <button class="btn" onclick="connectPrinter('printer1')">
+  CONNECT
+ </button>
+
+ <button class="btn" onclick="disconnectPrinter('printer1')">
+  DISCONNECT
+ </button>
+
+ <button class="btn" onclick="testPrinter('printer1')">
+  TEST PRINT
+ </button>
+
+ <p>Status: <span id="printer1Status">Not Connected</span></p>
+
+ <button class="btn" onclick="savePrinterSettings()">
+  SAVE PRINTER SETTINGS
+ </button>
 </div>
 
 <div class="card" id="printer2Card">
@@ -1772,9 +1792,35 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   <option value="80" selected>80 mm</option>
  </select>
 
- <p>Bluetooth Printer</p>
- <p id="printer2Status">Not Connected</p>
+ <label>Bluetooth Device</label>
+ <select id="printer2Device">
+  <option value="">Select Printer 2</option>
+ </select>
+
+ <button class="btn" onclick="loadBluetoothDevices()">
+  REFRESH DEVICES
+ </button>
+
+ <button class="btn" onclick="connectPrinter('printer2')">
+  CONNECT
+ </button>
+
+ <button class="btn" onclick="disconnectPrinter('printer2')">
+  DISCONNECT
+ </button>
+
+ <button class="btn" onclick="testPrinter('printer2')">
+  TEST PRINT
+ </button>
+
+ <p>Status: <span id="printer2Status">Not Connected</span></p>
+
+ <button class="btn" onclick="savePrinterSettings()">
+  SAVE PRINTER SETTINGS
+ </button>
 </div>
+
+
 
 </section>
 
@@ -3383,27 +3429,158 @@ function updateMixedPaymentSummary(){
 }
 
 
+const BluetoothPrinter = window.Capacitor?.Plugins?.BluetoothPrinter;
+
 function savePrinterSettings(){
     const width1 = document.getElementById('printer1Width').value;
     const width2 = document.getElementById('printer2Width').value;
 
+    const device1 = document.getElementById('printer1Device').value;
+    const device2 = document.getElementById('printer2Device').value;
+
     localStorage.setItem('jewelryPrinter1Width', width1);
     localStorage.setItem('jewelryPrinter2Width', width2);
+    localStorage.setItem('jewelryPrinter1Device', device1);
+    localStorage.setItem('jewelryPrinter2Device', device2);
 
     alert('Printer settings saved successfully.');
 }
 
 function loadPrinterSettings(){
-    const width1 = localStorage.getItem('jewelryPrinter1Width') || '80';
-    const width2 = localStorage.getItem('jewelryPrinter2Width') || '80';
+    document.getElementById('printer1Width').value =
+        localStorage.getItem('jewelryPrinter1Width') || '80';
 
-    document.getElementById('printer1Width').value = width1;
-    document.getElementById('printer2Width').value = width2;
+    document.getElementById('printer2Width').value =
+        localStorage.getItem('jewelryPrinter2Width') || '80';
+
+    document.getElementById('printer1Device').value =
+        localStorage.getItem('jewelryPrinter1Device') || '';
+
+    document.getElementById('printer2Device').value =
+        localStorage.getItem('jewelryPrinter2Device') || '';
+}
+
+async function loadBluetoothDevices(){
+    if(!BluetoothPrinter){
+        alert('Bluetooth plugin is not available. Please build the Android APK first.');
+        return;
+    }
+
+    try{
+        const result = await BluetoothPrinter.getPairedDevices();
+
+        ['printer1Device','printer2Device'].forEach(id=>{
+            const select = document.getElementById(id);
+            const previous = select.value;
+
+            select.innerHTML = '<option value="">Select Bluetooth Printer</option>';
+
+            result.devices.forEach(device=>{
+                const option = document.createElement('option');
+                option.value = device.address;
+                option.textContent = device.name + ' (' + device.address + ')';
+                select.appendChild(option);
+            });
+
+            if(previous){
+                select.value = previous;
+            }
+        });
+
+        alert('Bluetooth devices refreshed.');
+    }catch(error){
+        alert('Unable to load Bluetooth devices: ' + error);
+    }
+}
+
+async function connectPrinter(printerId){
+    if(!BluetoothPrinter){
+        alert('Please build the Android APK first.');
+        return;
+    }
+
+    const deviceId = printerId === 'printer1'
+        ? 'printer1Device'
+        : 'printer2Device';
+
+    const address = document.getElementById(deviceId).value;
+
+    if(!address){
+        alert('Please select a Bluetooth printer first.');
+        return;
+    }
+
+    const status = document.getElementById(printerId + 'Status');
+    status.textContent = 'Connecting...';
+
+    try{
+        const result = await BluetoothPrinter.connect({
+            printerId: printerId,
+            address: address
+        });
+
+        status.textContent = result.connected
+            ? 'Connected: ' + result.name
+            : 'Not Connected';
+
+        savePrinterSettings();
+
+    }catch(error){
+        status.textContent = 'Not Connected';
+        alert('Connection failed: ' + error);
+    }
+}
+
+async function disconnectPrinter(printerId){
+    if(!BluetoothPrinter) return;
+
+    try{
+        await BluetoothPrinter.disconnect({
+            printerId: printerId
+        });
+
+        document.getElementById(printerId + 'Status').textContent =
+            'Not Connected';
+
+    }catch(error){
+        alert('Disconnect failed: ' + error);
+    }
+}
+
+async function testPrinter(printerId){
+    if(!BluetoothPrinter){
+        alert('Please build the Android APK first.');
+        return;
+    }
+
+    const text =
+        'JEWELRY POS\n' +
+        '--------------------------\n' +
+        (printerId === 'printer1'
+            ? 'CUSTOMER RECEIPT\n'
+            : 'INTERNAL RECEIPT\n') +
+        'Bluetooth Test Print\n' +
+        'Printer: ' + printerId + '\n' +
+        '--------------------------\n' +
+        'Test successful!\n\n';
+
+    try{
+        await BluetoothPrinter.print({
+            printerId: printerId,
+            text: text
+        });
+
+        alert('Test print sent successfully.');
+
+    }catch(error){
+        alert('Test print failed: ' + error);
+    }
 }
 
 loadPrinterSettings();
- loadExchangeRates();
- updateMixedPaymentSummary();
+loadExchangeRates();
+updateMixedPaymentSummary();
+
 
 function loadReportFilters(){
     const agentSelect = document.getElementById('reportAgent');
