@@ -3982,11 +3982,8 @@ const convertedPayment = filtered.reduce(
 function login(){
 
  const role=document.getElementById('loginRole').value;
- const pin=document.getElementById('loginPin').value;
- alert(
- 'PIN value: ' + JSON.stringify(pin) +
- '\nPIN length: ' + pin.length
-);
+ const pinInput=document.querySelector('#loginScreen #loginPin');
+const pin=pinInput ? pinInput.value.trim() : '';
 
  if(role!=='owner' && role!=='cashier'){
   alert('Invalid login role.');
