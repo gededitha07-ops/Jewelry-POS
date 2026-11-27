@@ -1,5 +1,11 @@
 package com.jewelrypos.app;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.util.Base64;
+
+import java.io.ByteArrayOutputStream;
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -189,48 +195,161 @@ public class BluetoothPrinterPlugin extends Plugin {
         }
     }
 
-    @PluginMethod
-    public void print(PluginCall call) {
-        String printerId = call.getString("printerId");
-        String content = call.getString("text");
+    
+@PluginMethod
+public void print(PluginCall call) {
+    String printerId = call.getString("printerId");
+    String content = call.getString("text");
+    String logoBase64 = call.getString("logoBase64");
 
-        if (printerId == null || content == null) {
-            call.reject("Printer ID and receipt text are required.");
-            return;
-        }
+    Integer widthSetting = call.getInt("paperWidth");
+    int paperWidth = widthSetting == null ? 80 : widthSetting;
 
-        new Thread(() -> {
-            try {
-                BluetoothSocket socket = connections.get(printerId);
-
-                if (socket == null || !socket.isConnected()) {
-                    call.reject(printerId + " is not connected.");
-                    return;
-                }
-
-                OutputStream output = socket.getOutputStream();
-
-                // ESC/POS: initialize printer
-                output.write(new byte[] { 0x1B, 0x40 });
-
-                // Print receipt text
-                output.write(content.getBytes(StandardCharsets.UTF_8));
-
-                // Feed paper
-                output.write(new byte[] { 0x0A, 0x0A, 0x0A });
-
-                output.flush();
-
-                JSObject result = new JSObject();
-                result.put("printerId", printerId);
-                result.put("printed", true);
-                call.resolve(result);
-
-            } catch (Exception e) {
-                call.reject("Printing failed: " + e.getMessage());
-            }
-        }).start();
+    if (printerId == null || content == null) {
+        call.reject("Printer ID and receipt text are required.");
+        return;
     }
+
+    new Thread(() -> {
+        try {
+            BluetoothSocket socket = connections.get(printerId);
+
+            if (socket == null || !socket.isConnected()) {
+                call.reject(printerId + " is not connected.");
+                return;
+            }
+
+            OutputStream output = socket.getOutputStream();
+
+            // Initialize printer
+            output.write(new byte[]{0x1B, 0x40});
+
+            // Print store logo when available
+            if (logoBase64 != null && !logoBase64.isEmpty()) {
+                printLogo(output, logoBase64, paperWidth);
+            }
+
+            // Print receipt text
+            output.write(content.getBytes(StandardCharsets.UTF_8));
+
+            // Feed paper
+            output.write(new byte[]{0x0A, 0x0A, 0x0A});
+            output.flush();
+
+            JSObject result = new JSObject();
+            result.put("printerId", printerId);
+            result.put("printed", true);
+            result.put("logoPrinted",
+                logoBase64 != null && !logoBase64.isEmpty());
+
+            call.resolve(result);
+
+        } catch (Exception e) {
+            call.reject("Printing failed: " + e.getMessage());
+        }
+    }).start();
+}
+
+private void printLogo(
+    OutputStream output,
+    String logoBase64,
+    int paperWidth
+) throws Exception {
+
+    String imageData = logoBase64;
+
+    if (imageData.contains(",")) {
+        imageData = imageData.substring(imageData.indexOf(",") + 1);
+    }
+
+    byte[] decoded = Base64.decode(imageData, Base64.DEFAULT);
+
+    Bitmap original = BitmapFactory.decodeByteArray(
+        decoded, 0, decoded.length
+    );
+
+    if (original == null) {
+        throw new Exception("Invalid store logo image.");
+    }
+
+    int maxWidth = paperWidth == 58 ? 384 : 576;
+    int maxHeight = 180;
+
+    float scale = Math.min(
+        1f,
+        Math.min(
+            (float) maxWidth / original.getWidth(),
+            (float) maxHeight / original.getHeight()
+        )
+    );
+
+    int width = Math.max(1, Math.round(original.getWidth() * scale));
+    int height = Math.max(1, Math.round(original.getHeight() * scale));
+
+    Bitmap bitmap = Bitmap.createScaledBitmap(
+        original, width, height, true
+    );
+
+    original.recycle();
+
+    int widthBytes = (width + 7) / 8;
+
+    ByteArrayOutputStream image = new ByteArrayOutputStream();
+
+    // Center alignment
+    output.write(new byte[]{0x1B, 0x61, 0x01});
+
+    // GS v 0 raster image command
+    image.write(new byte[]{
+        0x1D, 0x76, 0x30, 0x00,
+        (byte)(widthBytes & 0xFF),
+        (byte)((widthBytes >> 8) & 0xFF),
+        (byte)(height & 0xFF),
+        (byte)((height >> 8) & 0xFF)
+    });
+
+    for (int y = 0; y < height; y++) {
+        for (int xByte = 0; xByte < widthBytes; xByte++) {
+
+            int value = 0;
+
+            for (int bit = 0; bit < 8; bit++) {
+                int x = xByte * 8 + bit;
+
+                if (x < width) {
+                    int pixel = bitmap.getPixel(x, y);
+
+                    int brightness;
+
+                    if (Color.alpha(pixel) < 128) {
+                        brightness = 255;
+                    } else {
+                        brightness = (
+                            Color.red(pixel) * 299 +
+                            Color.green(pixel) * 587 +
+                            Color.blue(pixel) * 114
+                        ) / 1000;
+                    }
+
+                    if (brightness < 160) {
+                        value |= (0x80 >> bit);
+                    }
+                }
+            }
+
+            image.write(value);
+        }
+    }
+
+    output.write(image.toByteArray());
+
+    // Return to left alignment
+    output.write(new byte[]{0x1B, 0x61, 0x00});
+    output.write(new byte[]{0x0A});
+
+    bitmap.recycle();
+}
+
 
     @Override
     protected void handleOnDestroy() {
