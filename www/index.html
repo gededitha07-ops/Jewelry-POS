@@ -456,8 +456,8 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   <label>Grand Total</label>
   <input id="billGrandTotal" value="Rp 0" readonly>
 
-  <label>Transaction Currency</label>
-  <select id="billCurrency" onchange="updateBillTotal()">
+  <label>Transaction Currency (choose the currency used for this bill)</label>
+  <select id="billCurrency" onchange="renderBillCart();updateBillTotal()">
    <option value="USD">USD ($)</option>
    <option value="IDR">IDR (Rp)</option>
    <option value="JPY">JPY (Â¥)</option>
@@ -851,7 +851,7 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
  
 <div class="card" id="exchangeRateCard">
  <h3>Currency Exchange Rates</h3>
- <p>Enter how much IDR one USD and one JPY is worth.</p>
+ <p>Set the exchange rate in Indonesian Rupiah. Product selling prices are stored in USD. These rates are used to calculate IDR and JPY transaction totals.</p>
  <label>1 USD = IDR (Rp)</label>
  <input type="number" id="usdRateInput" min="1" step="1" placeholder="Example: 16000">
  <label>1 JPY = IDR (Rp)</label>
@@ -1063,43 +1063,21 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
 
 function showPage(id,button){
  const role=localStorage.getItem('jewelryLoginRole');
- if(role!=='owner' && role!=='cashier'){
-  alert('Please login first.');
-  return;
-}
-
- const cashierAllowed=[
-  'dashboard',
-  'cashier',
-  'history',
-  'reports',
-  'settings',
-  'agents'
- ];
-
- if(role==='cashier' && !cashierAllowed.includes(id)){
-  alert('You do not have permission to access this menu.');
-  return;
- }
-
+ if(!['owner','cashier'].includes(role)){alert('Please login first.');return;}
+ const cashierAllowed=['dashboard','cashier','history','reports','settings','agents'];
+ if(role==='cashier'&&!cashierAllowed.includes(id)){alert('You do not have permission to access this menu.');return;}
+ const page=document.getElementById(id);if(!page){alert('Menu page not found: '+id);return;}
  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
- document.getElementById(id).classList.add('active');
- const settingsCards=document.querySelectorAll('#settings .card');
-
-settingsCards.forEach(card=>{
- if(role==='cashier'){
-  card.style.display=
-   ['exchangeRateCard','salesNameSettingsCard','printer1Card','printer2Card'].includes(card.id)
-   ? ''
-   : 'none';
- }else{
-  card.style.display='';
- }
-});
-
+ page.classList.add('active');
+ document.querySelectorAll('#settings .card').forEach(card=>{
+  if(role==='cashier')card.style.display=['exchangeRateCard','salesNameSettingsCard'].includes(card.id)?'':'none';
+  else card.style.display='';
+ });
  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
-
- if(button) button.classList.add('active');
+ if(button)button.classList.add('active');
+ if(id==='settings'){renderSalesNames();loadExchangeRates();}
+ if(id==='agents')renderAgents();
+ if(id==='cashier')renderBillOptions();
 }
 
 
@@ -1462,6 +1440,16 @@ function saveStockMovement(){
 
 renderStockManagement();
 
+// Load transactions before the dashboard reads them.
+let transactions = [];
+try{
+ const savedTransactions = JSON.parse(localStorage.getItem('jewelryTransactions') || '[]');
+ transactions = Array.isArray(savedTransactions) ? savedTransactions : [];
+}catch(error){
+ console.error('Unable to load transactions:', error);
+ transactions = [];
+}
+
 function updateDashboard(){
  const totalProducts = products.length;
 
@@ -1483,81 +1471,54 @@ function updateDashboard(){
 
 updateDashboard();
 
+// Safe local data reader: prevents one damaged list from stopping the whole POS.
+function readJewelryList(key){
+ try{
+  const value=JSON.parse(localStorage.getItem(key)||'[]');
+  return Array.isArray(value)?value.filter(item=>item&&typeof item==='object'):[];
+ }catch(error){
+  console.error('Unable to read '+key,error);
+  return [];
+ }
+}
+function saveJewelryList(key,list){
+ try{ localStorage.setItem(key,JSON.stringify(list)); return true; }
+ catch(error){ alert('Unable to save data. Please check device storage.'); console.error(error); return false; }
+}
+
 // JEWELRY POS - AGENT MANAGEMENT
 
-let agents = JSON.parse(
- localStorage.getItem('jewelryAgents') || '[]'
-);
+let agents = readJewelryList('jewelryAgents');
 
 function saveAgent(){
-
  const role=localStorage.getItem('jewelryLoginRole');
- const id=document.getElementById('editAgentId').value;
- if(role!=='owner' && (role!=='cashier' || id)){
-  alert('Cashier can add new agents. Only Owner can edit agents.');
-  return;
- }
-
- const name=document.getElementById('agentName').value.trim();
-
- if(!name){
-  alert('Please enter Agent Name.');
-  return;
- }
-
- const duplicate=agents.some(a=>
-  a.name.toLowerCase()===name.toLowerCase() && a.id!==id
- );
-
- if(duplicate){
-  alert('Agent already exists.');
-  return;
- }
-
- if(id){
-  const index=agents.findIndex(a=>a.id===id);
-  if(index!==-1) agents[index].name=name;
- }else{
-  agents.push({
-   id:Date.now().toString(),
-   name
-  });
- }
-
- localStorage.setItem('jewelryAgents',JSON.stringify(agents));
-
- resetAgentForm();
- renderAgents();
- loadReportFilters();
-
+ const id=(document.getElementById('editAgentId')?.value||'').trim();
+ if(!['owner','cashier'].includes(role)){alert('Please login first.');return;}
+ if(role==='cashier' && id){alert('Cashier can add agents. Only Owner can edit agents.');return;}
+ const input=document.getElementById('agentName');
+ const name=(input?.value||'').trim();
+ if(!name){alert('Please enter Agent Name.');input?.focus();return;}
+ const duplicate=agents.some(a=>String(a.name||'').toLowerCase()===name.toLowerCase() && String(a.id)!==id);
+ if(duplicate){alert('Agent already exists.');return;}
+ if(id){const index=agents.findIndex(a=>String(a.id)===id);if(index<0){alert('Agent record not found.');return;}agents[index].name=name;}
+ else{agents.push({id:'AG-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name});}
+ if(!saveJewelryList('jewelryAgents',agents))return;
+ if(input)input.value='';
+ const edit=document.getElementById('editAgentId');if(edit)edit.value='';
+ const title=document.getElementById('agentFormTitle');if(title)title.textContent='Add New Agent';
+ renderAgents();renderBillOptions();loadReportFilters();
  alert('Agent saved successfully.');
 }
 
 function renderAgents(){
- const table=document.getElementById('agentTable');
- if(!table)return;
-
- const search=document.getElementById('agentSearch').value.toLowerCase();
-
- const filtered=agents.filter(a=>
-  a.name.toLowerCase().includes(search)
- );
-
- if(filtered.length===0){
-  table.innerHTML='<tr><td colspan="3">No agents found.</td></tr>';
-  return;
- }
-
- table.innerHTML=filtered.map((a,index)=>`
-  <tr>
-   <td>${index+1}</td>
-   <td>${escapeProductText(a.name)}</td>
-   <td>
-    <button class="btn" onclick="editAgent('${a.id}')">EDIT</button>
-    <button class="btn dark" onclick="deleteAgent('${a.id}')">DELETE</button>
-   </td>
-  </tr>
- `).join('');
+ const table=document.getElementById('agentTable');if(!table)return;
+ const search=(document.getElementById('agentSearch')?.value||'').trim().toLowerCase();
+ const filtered=agents.filter(a=>String(a.name||'').toLowerCase().includes(search));
+ if(!filtered.length){table.innerHTML='<tr><td colspan="3">No agents found.</td></tr>';return;}
+ table.innerHTML=filtered.map((a,index)=>{
+  const id=String(a.id||'').replace(/[^a-zA-Z0-9_-]/g,'');
+  return `<tr><td>${index+1}</td><td>${escapeProductText(a.name||'')}</td><td><button class="btn" onclick="editAgent('${id}')">EDIT</button> <button class="btn dark" onclick="deleteAgent('${id}')">DELETE</button></td></tr>`;
+ }).join('');
 }
 
 
@@ -1606,10 +1567,6 @@ function resetAgentForm(){
 renderAgents();
 
 // JEWELRY POS - CASHIER SYSTEM
-
-let transactions = JSON.parse(
- localStorage.getItem('jewelryTransactions') || '[]'
-);
 
 let billCart = [];
 
@@ -1841,13 +1798,13 @@ function saveTransaction(){
  if((currency!=='USD' && rate<=0) || discountDisplay<0 || discountDisplay>subtotalUSD*rate){alert('Please set a valid exchange rate and discount.');return;}
  const rates=getCommissionRates();
  if(rates.guide<0||rates.driver<0||rates.guide>100||rates.driver>100){alert('Please enter valid commission percentages (0â100).');return;}
- const subtotalIDR=Math.round(subtotalUSD*(Number(localStorage.getItem('jewelryUSDRate'))||0));
- const discountUSD=discountDisplay/rate;
- const discountIDR=Math.round(discountUSD*(Number(localStorage.getItem('jewelryUSDRate'))||0));
- const grandTotalIDR=Math.max(0,subtotalIDR-discountIDR);
- const grandDisplay=subtotalUSD*rate-discountDisplay;
  const usdRate=Number(localStorage.getItem('jewelryUSDRate'))||0;
  const jpyRate=Number(localStorage.getItem('jewelryJPYRate'))||0;
+ const subtotalIDR=Math.round(subtotalUSD*usdRate);
+ const discountUSD=discountDisplay/rate;
+ const discountIDR=Math.round(discountUSD*usdRate);
+ const grandTotalIDR=Math.max(0,subtotalIDR-discountIDR);
+ const grandDisplay=subtotalUSD*rate-discountDisplay;
  if(usdRate<=0){alert('Please set the USD exchange rate in Settings before saving a transaction.');return;}
  if(currency==='JPY'&&jpyRate<=0){alert('Please set the JPY exchange rate in Settings before saving a transaction.');return;}
  const paymentDetails={IDR:currency==='IDR'?Math.round(grandDisplay):0,USD:currency==='USD'?grandDisplay:0,JPY:currency==='JPY'?Math.round(grandDisplay):0,usdRate,jpyRate,totalPaidIDR:grandTotalIDR,changeIDR:0};
@@ -1924,7 +1881,7 @@ function renderTransactionHistory(){
    <td>${escapeProductText(t.date||'-')}</td>
    <td>${escapeProductText(t.sales||'-')}</td>
    <td>${escapeProductText(t.agent||'-')}</td>
-   <td>${rupiah(t.grandTotal)}</td>
+   <td>${formatCurrency(t.displayGrandTotal??t.grandTotal,t.currency||'IDR')}</td>
    <td>${escapeProductText(t.payment||'-')}</td>
    <td>
     <button class="btn" onclick="viewTransaction('${t.id}')">DETAIL</button>
@@ -1957,8 +1914,8 @@ function viewTransaction(id){
    <td>${escapeProductText(item.code)}</td>
    <td>${escapeProductText(item.name)}</td>
    <td>${item.qty}</td>
-   <td>${rupiah(item.price)}</td>
-   <td>${rupiah(item.price*item.qty)}</td>
+   <td>${formatCurrency(item.priceUSD!=null ? Number(item.priceUSD)*Number(t.currencyRate||getCurrencyRate(t.currency||'IDR')) : item.price,t.currency||'IDR')}</td>
+   <td>${formatCurrency(item.priceUSD!=null ? Number(item.priceUSD)*item.qty*Number(t.currencyRate||getCurrencyRate(t.currency||'IDR')) : item.price*item.qty,t.currency||'IDR')}</td>
   </tr>
  `).join('');
 
@@ -2242,75 +2199,32 @@ function applyDiscountPreset(){
     alert('Discount applied successfully.');
 }
 
-let salesNames = JSON.parse(
-    localStorage.getItem('jewelrySalesNames') || '[]'
-);
+let salesNames = readJewelryList('jewelrySalesNames');
 
 function saveSalesName(){
-
-    if(!['owner','cashier'].includes(localStorage.getItem('jewelryLoginRole'))){
-        alert('Please login first.');
-        return;
-    }
-
-    const input = document.getElementById('salesNameInput');
-    const name = input.value.trim();
-
-    if(!name){
-        alert('Please enter Sales Name.');
-        return;
-    }
-
-    const exists = salesNames.some(
-        s => s.name.toLowerCase() === name.toLowerCase()
-    );
-
-    if(exists){
-        alert('Sales Name already exists.');
-        return;
-    }
-
-    salesNames.push({
-        id: Date.now().toString(),
-        name: name
-    });
-
-    localStorage.setItem(
-        'jewelrySalesNames',
-        JSON.stringify(salesNames)
-    );
-
-    input.value = '';
-    renderSalesNames();
-    loadReportFilters();
-
-    alert('Sales Name saved successfully.');
+ const role=localStorage.getItem('jewelryLoginRole');
+ if(!['owner','cashier'].includes(role)){alert('Please login first.');return;}
+ const input=document.getElementById('salesNameInput');
+ const name=(input?.value||'').trim();
+ if(!name){alert('Please enter Sales Name.');input?.focus();return;}
+ const exists=salesNames.some(item=>String(item.name||'').trim().toLowerCase()===name.toLowerCase());
+ if(exists){alert('Sales Name already exists.');return;}
+ salesNames.push({id:'SALE-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name});
+ if(!saveJewelryList('jewelrySalesNames',salesNames))return;
+ if(input)input.value='';
+ renderSalesNames();renderBillOptions();loadReportFilters();
+ alert('Sales Name saved successfully.');
 }
 
 function renderSalesNames(){
-    const table = document.getElementById('salesNameTable');
-    if(!table) return;
-    renderSalesNameOptions();
-
-    if(salesNames.length === 0){
-        table.innerHTML =
-            '<tr><td colspan="2">No Sales Name yet.</td></tr>';
-        return;
-    }
-
-    table.innerHTML = salesNames.map(s => `
-        <tr>
-            <td>${escapeProductText(s.name)}</td>
-            <td>
-                <button class="btn" onclick="editSalesName('${s.id}')">
-                    EDIT
-                </button>
-                <button class="btn danger" onclick="deleteSalesName('${s.id}')">
-                    DELETE
-                </button>
-            </td>
-        </tr>
-    `).join('');
+ const table=document.getElementById('salesNameTable');
+ renderSalesNameOptions();
+ if(!table)return;
+ if(!salesNames.length){table.innerHTML='<tr><td colspan="2">No Sales Name yet.</td></tr>';return;}
+ table.innerHTML=salesNames.map(item=>{
+  const id=String(item.id||'').replace(/[^a-zA-Z0-9_-]/g,'');
+  return `<tr><td>${escapeProductText(item.name||'')}</td><td><button class="btn" onclick="editSalesName('${id}')">EDIT</button> <button class="btn danger" onclick="deleteSalesName('${id}')">DELETE</button></td></tr>`;
+ }).join('');
 }
 
 
@@ -2377,23 +2291,14 @@ function deleteSalesName(id){
 }
 
 renderSalesNames();
+loadReportFilters();
 
 
 function renderSalesNameOptions(){
-    const select = document.getElementById('salesName');
-    if(!select) return;
-
-    const names = JSON.parse(
-        localStorage.getItem('jewelrySalesNames') || '[]'
-    );
-
-    select.innerHTML =
-        '<option value="">Select Sales Name</option>' +
-        names.map(s => `
-            <option value="${escapeProductText(s.name)}">
-                ${escapeProductText(s.name)}
-            </option>
-        `).join('');
+ const select=document.getElementById('salesName');if(!select)return;
+ const previous=select.value;
+ select.innerHTML='<option value="">Select Sales Name</option>'+salesNames.map(item=>`<option value="${escapeProductText(item.name||'')}">${escapeProductText(item.name||'')}</option>`).join('');
+ if(salesNames.some(item=>item.name===previous))select.value=previous;
 }
 
 
@@ -2509,7 +2414,8 @@ function saveExchangeRates(){
 }
 function loadExchangeRates(){
  const usd=localStorage.getItem('jewelryUSDRate'),jpy=localStorage.getItem('jewelryJPYRate');
- document.getElementById('usdRateInput').value=usd||'';document.getElementById('jpyRateInput').value=jpy||'';updateMixedPaymentSummary();
+ const usdInput=document.getElementById('usdRateInput');const jpyInput=document.getElementById('jpyRateInput');
+ if(usdInput)usdInput.value=usd||'';if(jpyInput)jpyInput.value=jpy||'';updateMixedPaymentSummary();
 }
 
 
@@ -2705,33 +2611,12 @@ updateMixedPaymentSummary();
 
 
 function loadReportFilters(){
-    const agentSelect = document.getElementById('reportAgent');
-    const salesSelect = document.getElementById('reportSales');
-
-    agentSelect.innerHTML =
-        '<option value="">All Agents</option>' +
-        agents.map(a => `
-            <option value="${escapeProductText(a.name)}">
-                ${escapeProductText(a.name)}
-            </option>
-        `).join('');
-
-    salesSelect.innerHTML =
-        '<option value="">All Sales</option>' +
-        salesNames.map(s => `
-            <option value="${escapeProductText(s.name)}">
-                ${escapeProductText(s.name)}
-            </option>
-        `).join('');
- const agentReportSelect = document.getElementById('agentReportSelect');
-
-if(agentReportSelect){
-    agentReportSelect.innerHTML =
-        '<option value="">Select Agent</option>' +
-        agents.map(a =>
-            `<option value="${escapeProductText(a.name)}">${escapeProductText(a.name)}</option>`
-        ).join('');
-}
+ const agentSelect=document.getElementById('reportAgent');
+ const salesSelect=document.getElementById('reportSales');
+ if(agentSelect)agentSelect.innerHTML='<option value="">All Agents</option>'+agents.map(a=>`<option value="${escapeProductText(a.name||'')}">${escapeProductText(a.name||'')}</option>`).join('');
+ if(salesSelect)salesSelect.innerHTML='<option value="">All Sales</option>'+salesNames.map(a=>`<option value="${escapeProductText(a.name||'')}">${escapeProductText(a.name||'')}</option>`).join('');
+ const agentReportSelect=document.getElementById('agentReportSelect');
+ if(agentReportSelect)agentReportSelect.innerHTML='<option value="">Select Agent</option>'+agents.map(a=>`<option value="${escapeProductText(a.name||'')}">${escapeProductText(a.name||'')}</option>`).join('');
 }
 
 function viewSalesReport(){
@@ -3428,32 +3313,3 @@ function printReceiptContent(content,title){
     }
 
     th,td{
-     padding:5px 2px;
-     text-align:left;
-     border-bottom:1px dashed #999;
-    }
-
-    @page{
-     size:${paperSize} auto;
-     margin:0;
-    }
-   </style>
-  </head>
-  <body>
-   ${content}
-  </body>
-  </html>
- `);
-
- printWindow.document.close();
-
- printWindow.onload=function(){
-  printWindow.focus();
-  printWindow.print();
- };
-}
-
-</script>
-
-</body>
-</html>
