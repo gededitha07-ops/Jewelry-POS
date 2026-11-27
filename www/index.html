@@ -3990,6 +3990,12 @@ function login(){
  }
 
  const ownerPin=localStorage.getItem('jewelryOwnerPin')||'1234';
+ 
+ alert(
+ 'Stored Owner PIN: ' +
+ localStorage.getItem('jewelryOwnerPin')
+);
+ 
  const cashierPin=localStorage.getItem('jewelryCashierPin')||'0000';
 
  if(role==='owner' && pin!==ownerPin){
