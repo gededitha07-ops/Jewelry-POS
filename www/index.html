@@ -1570,6 +1570,10 @@ renderAgents();
 
 let billCart = [];
 
+// Initialize all lists before cashier UI renders them.
+let salesNames = readJewelryList('jewelrySalesNames');
+let discountPresets = readJewelryList('jewelryDiscountPresets');
+
 function rupiah(value){
  return 'Rp ' + Number(value||0).toLocaleString('id-ID');
 }
@@ -2198,8 +2202,6 @@ function applyDiscountPreset(){
 
     alert('Discount applied successfully.');
 }
-
-let salesNames = readJewelryList('jewelrySalesNames');
 
 function saveSalesName(){
  const role=localStorage.getItem('jewelryLoginRole');
@@ -3313,3 +3315,32 @@ function printReceiptContent(content,title){
     }
 
     th,td{
+     padding:5px 2px;
+     text-align:left;
+     border-bottom:1px dashed #999;
+    }
+
+    @page{
+     size:${paperSize} auto;
+     margin:0;
+    }
+   </style>
+  </head>
+  <body>
+   ${content}
+  </body>
+  </html>
+ `);
+
+ printWindow.document.close();
+
+ printWindow.onload=function(){
+  printWindow.focus();
+  printWindow.print();
+ };
+}
+
+</script>
+
+</body>
+</html>
