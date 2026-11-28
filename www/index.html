@@ -616,6 +616,121 @@ tbody tr:hover {
   }
 }
 
+/* =========================================
+   JEWELRY POS - LUXURY IMAGE & FINISH
+   CSS ONLY - NO JAVASCRIPT CHANGES
+========================================= */
+
+/* HEADER WITH JEWELRY IMAGE */
+.topbar {
+  position: fixed;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(23, 36, 58, 1) 0%,
+      rgba(23, 36, 58, .97) 48%,
+      rgba(23, 36, 58, .62) 100%
+    ),
+    url('https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1200&q=85')
+    right center / cover no-repeat;
+}
+
+.topbar > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* KEEP STORE LOGO DYNAMIC */
+.brand img {
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* SIDEBAR JEWELRY IMAGE */
+.sidebar {
+  position: fixed;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.sidebar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 190px;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(23, 36, 58, 1),
+      rgba(23, 36, 58, .35)
+    ),
+    url('https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=700&q=85')
+    center / cover no-repeat;
+  opacity: .48;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sidebar button {
+  position: relative;
+  z-index: 1;
+}
+
+/* LUXURY PAGE HEADINGS */
+.page h2 {
+  color: var(--lux-navy);
+  font-weight: 700;
+  letter-spacing: -.6px;
+}
+
+/* PREMIUM CARDS */
+.card {
+  border: 1px solid #ece5d8;
+  border-radius: 17px;
+  background: #fffefa;
+  box-shadow: 0 7px 25px rgba(35, 43, 55, .055);
+}
+
+/* PREMIUM INPUTS */
+input,
+select,
+textarea {
+  border-color: #e6dfd2;
+  border-radius: 10px;
+  background: #fffefa;
+}
+
+/* PREMIUM BUTTONS */
+.btn {
+  border-radius: 10px;
+  letter-spacing: .35px;
+}
+
+/* TABLE FINISH */
+table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th {
+  background: #f4efe5;
+  color: #796744;
+}
+
+/* MOBILE HEADER IMAGE */
+@media(max-width:700px) {
+  .topbar {
+    background-position: 75% center;
+  }
+
+  .sidebar::after {
+    height: 130px;
+  }
+}
+
 </style>
 </head>
  
