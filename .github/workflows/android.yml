@@ -41,10 +41,13 @@ jobs:
       - name: Create Android Project
         run: npx cap add android
         
-      - name: Add Bluetooth Native Plugin
+    
+      - name: Add Native Plugins
         run: |
           mkdir -p android/app/src/main/java/com/jewelrypos/app
-          cp native/BluetoothPrinterPlugin.java android/app/src/main/java/com/jewelrypos/app/BluetoothPrinterPlugin.java
+
+          cp native/BluetoothPrinterPlugin.java android/app/src/main/java/com/jewelrypos/app/
+          cp native/PDFPrinterPlugin.java android/app/src/main/java/com/jewelrypos/app/
 
           python3 - <<'PY'
           from pathlib import Path
@@ -52,24 +55,27 @@ jobs:
           path = Path("android/app/src/main/java/com/jewelrypos/app/MainActivity.java")
           content = path.read_text()
 
-          if "BluetoothPrinterPlugin" not in content:
-              content = content.replace(
-                  "import com.getcapacitor.BridgeActivity;",
-                  "import com.getcapacitor.BridgeActivity;\nimport com.jewelrypos.app.BluetoothPrinterPlugin;"
-              )
+          content = content.replace(
+              "import com.getcapacitor.BridgeActivity;",
+              """import com.getcapacitor.BridgeActivity;
+          import com.jewelrypos.app.BluetoothPrinterPlugin;
+          import com.jewelrypos.app.PDFPrinterPlugin;"""
+          )
 
-              content = content.replace(
-                  "public class MainActivity extends BridgeActivity {",
-                  """public class MainActivity extends BridgeActivity {
+          content = content.replace(
+              "public class MainActivity extends BridgeActivity {",
+              """public class MainActivity extends BridgeActivity {
               @Override
               public void onCreate(android.os.Bundle savedInstanceState) {
                   registerPlugin(BluetoothPrinterPlugin.class);
+                  registerPlugin(PDFPrinterPlugin.class);
                   super.onCreate(savedInstanceState);
               }"""
-              )
+          )
 
           path.write_text(content)
           PY
+ 
 
         
       - name: Add Bluetooth Permissions
