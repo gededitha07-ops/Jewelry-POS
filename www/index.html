@@ -3322,8 +3322,8 @@ function showReceiptPreview(bill){
   let unit=usd;
   if(currency==='IDR') unit=usd*(Number(bill.paymentDetails?.usdRate)||0);
   if(currency==='JPY') unit=usd*(Number(bill.paymentDetails?.usdRate)||0)/(Number(bill.paymentDetails?.jpyRate)||1);
-  return `<tr><td>${safe(item.name)}<small>${Number(item.qty||0)} Ã ${fmt(unit)}</small></td><td>${fmt(unit*Number(item.qty||0))}</td></tr>`;
- }).join('');
+  return `<tr><td>${safe(item.name)}<small>${Number(item.qty||0)} X ${fmt(unit)}</small></td><td>${fmt(unit*Number(item.qty||0))}</td></tr>`;
+}).join('');
  const logo=localStorage.getItem('jewelryStoreLogo')||'';
  const logoHtml=logo?`<img src="${logo}" alt="Store logo" style="max-width:90px;max-height:65px;object-fit:contain;display:block;margin:0 auto 8px">`:'';
  const receipt=(heading,internal=false)=>`<div class="receipt-preview-paper">${logoHtml}<h3>${safe(localStorage.getItem('jewelryStoreName')||'Jewelry POS')}</h3><h4>${heading}</h4><p>Bill No: ${safe(bill.billNo)}<br>Date: ${safe(bill.date)}<br>Sales: ${safe(bill.sales)}${internal?`<br>Agent: ${safe(bill.agent)}<br>Car Plate: ${safe(bill.carPlate||'-')}`:''}</p><table><thead><tr><th>Item</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><div class="receipt-preview-totals"><p>Subtotal <b>${fmt(bill.displaySubtotal??bill.subtotal)}</b></p><p>Discount <b>${fmt(bill.displayDiscount??bill.discount)}</b></p><p class="receipt-grand">GRAND TOTAL <b>${fmt(bill.displayGrandTotal??bill.grandTotal)}</b></p></div><p>Currency: ${safe(currency)}<br>Payment: ${safe(bill.payment||'-')}</p>${internal?`<hr><h4>COMMISSION DETAILS</h4><p>Guide (${Number(bill.guidePercent||0)}%): <b>${rupiah(bill.guideAmount||0)}</b><br>Driver (${Number(bill.driverPercent||0)}%): <b>${rupiah(bill.driverAmount||0)}</b></p><p>TOTAL COMMISSION: <b>${rupiah(Number(bill.guideAmount||0)+Number(bill.driverAmount||0))}</b></p>`:`<p class="receipt-thanks">Thank you for your purchase!</p>`}</div>`;
