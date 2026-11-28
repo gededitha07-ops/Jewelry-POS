@@ -1571,10 +1571,18 @@ function getCurrencyRate(currency){
  if(currency==='JPY'){ const usd=Number(localStorage.getItem('jewelryUSDRate'))||0; const jpy=Number(localStorage.getItem('jewelryJPYRate'))||0; return jpy>0?usd/jpy:0; }
  return 1;
 }
+ 
 function formatCurrency(value,currency){
  const n=Number(value||0);
- if(currency==='IDR') return 'Rp '+Math.round(n).toLocaleString('id-ID');
- if(currency==='JPY') return 'Â¥'+Math.round(n).toLocaleString('en-US');
+
+ if(currency==='IDR'){
+  return 'Rp '+Math.round(n).toLocaleString('id-ID');
+ }
+
+ if(currency==='JPY'){
+  return '\u00A5'+Math.round(n).toLocaleString('en-US');
+ }
+
  return '$'+n.toFixed(2);
 }
 function usdToCurrency(value,currency){ return Number(value||0)*getCurrencyRate(currency); }
@@ -3150,7 +3158,7 @@ async function printInternalReceipt(bill){
  receipt += 'PAYMENT BREAKDOWN\n';
  receipt += 'IDR: ' + rupiah(pd.IDR || 0) + '\n';
  receipt += 'USD: $' + Number(pd.USD || 0).toFixed(2) + '\n';
- receipt += 'JPY: Â¥' + Number(pd.JPY || 0).toLocaleString('en-US',{maximumFractionDigits:0}) + '\n';
+ receipt += 'JPY: ' + formatCurrency(pd.JPY || 0,'JPY') + '\n';
  receipt += 'Total Paid: ' + rupiah(pd.totalPaidIDR || 0) + '\n';
  receipt += 'Change: ' + rupiah(pd.changeIDR || 0) + '\n';
 
