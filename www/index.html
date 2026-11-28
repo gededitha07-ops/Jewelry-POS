@@ -1972,11 +1972,15 @@ function formatCurrency(value,currency){
 }
 function usdToCurrency(value,currency){ return Number(value||0)*getCurrencyRate(currency); }
 
+
 function generateBillNo(){
- const number=Number(localStorage.getItem('jewelryBillCounter')||0)+1;
- localStorage.setItem('jewelryBillCounter',number);
- return 'JWL-'+String(number).padStart(5,'0');
+ const number = Number(localStorage.getItem('jewelryBillCounter') || 0) + 1;
+
+ localStorage.setItem('jewelryBillCounter', String(number));
+
+ return 'KJ' + String(number).padStart(2, '0');
 }
+
 
 function initializeBill(){
  const currencySelect=document.getElementById('billCurrency');
