@@ -4919,30 +4919,109 @@ const convertedPayment = filtered.reduce(
     `;
 }
  
- function saveAgentReportPDF(){
+ 
+async function saveAgentReportPDF(){
 
     const agent = document.getElementById('agentReportSelect').value;
 
-    if(!agent || document.getElementById('agentReportSummary').textContent === 'No report generated yet.'){
-    alert('Please generate an Agent Report first.');
-    return;
+    const summary = document.getElementById('agentReportSummary');
+    const details = document.getElementById('agentReportDetails');
+
+    if(!agent || summary.textContent === 'No report generated yet.'){
+        alert('Please generate an Agent Report first.');
+        return;
+    }
+
+    if(!PDFPrinter || typeof PDFPrinter.savePDF !== 'function'){
+        alert('Android PDF plugin is not available. Please rebuild the APK.');
+        return;
+    }
+
+    const storeName = document.getElementById('agentReportStoreName');
+    const storeLogo = document.getElementById('agentReportLogo');
+    const agentName = document.getElementById('agentReportName');
+    const period = document.getElementById('agentReportPeriod');
+
+    const logoHTML = (!storeLogo.hidden && storeLogo.src)
+        ? `<img src="${storeLogo.src}" style="max-width:100px;max-height:75px;object-fit:contain;">`
+        : '';
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Jewelry POS Agent Report</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                color: #222;
+                padding: 25px;
+                font-size: 12px;
+            }
+            .header {
+                text-align: center;
+                border-bottom: 2px solid #b08d57;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }
+            .header img {
+                display: block;
+                margin: 0 auto 10px;
+            }
+            h2 { margin: 5px 0; }
+            h3 { margin-bottom: 8px; }
+            .summary {
+                border: 1px solid #ddd;
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 10px;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 7px 5px;
+                text-align: left;
+            }
+            th {
+                background: #f1eee8;
+            }
+            tr {
+                page-break-inside: avoid;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            ${logoHTML}
+            <h2>${storeName.textContent}</h2>
+            <h3>AGENT REPORT</h3>
+            <p>${agentName.textContent}</p>
+            <p>${period.textContent}</p>
+        </div>
+
+        <div class="summary">
+            <h3>Report Summary</h3>
+            ${summary.innerHTML}
+        </div>
+
+        <h3>Transaction Details</h3>
+        ${details.innerHTML}
+    </body>
+    </html>`;
+
+    try {
+        await PDFPrinter.savePDF({html: html});
+    } catch(error) {
+        console.error('Agent PDF error:', error);
+        alert('Unable to create Agent PDF: ' + (error.message || error));
+    }
 }
 
-    const oldTitle = document.title;
-
-    document.title = 'Jewelry-POS-Agent-Report-' +
-        agent.replace(/[^a-z0-9]/gi,'-');
-
-    document.body.classList.add('printing-agent-report');
-
-    window.onafterprint = function(){
-        document.body.classList.remove('printing-agent-report');
-        document.title = oldTitle;
-        window.onafterprint = null;
-    };
-
-    window.print();
-}
  
 function login(){
 
