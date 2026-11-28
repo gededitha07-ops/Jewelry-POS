@@ -125,23 +125,13 @@ th,td{
 }
 th{background:#f7f8fa}
 @media(max-width:700px){
- .topbar{height:58px;padding:0 12px}
- .layout{padding-top:58px}
- .sidebar{top:58px;width:58px;padding:10px 5px}
- .sidebar button{justify-content:center;font-size:0;text-align:center;padding:13px 3px;min-height:46px}
- .sidebar button .menu-icon{flex:0 0 22px}
- main{margin-left:58px;width:calc(100% - 58px);padding:12px;min-width:0}
- .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
- .stat{padding:13px;min-width:0}
- .stat strong{font-size:17px;overflow-wrap:anywhere}
- .brand{font-size:15px;gap:8px}
- .card{padding:14px;border-radius:10px}
- input,select{min-width:0}
- table{min-width:620px}
- .btn{padding:10px 13px;font-size:12px;margin:2px 0}
+ .sidebar{width:65px;padding:10px 5px}
+ .sidebar button{font-size:0;text-align:center;padding:14px 3px}
+ .sidebar button::first-letter{font-size:17px}
+ main{margin-left:65px;width:calc(100% - 65px);padding:14px}
+ .stats{grid-template-columns:repeat(2,1fr)}
+ .brand{font-size:16px}
 }
-@media(max-width:380px){.stats{grid-template-columns:1fr}.topbar{padding:0 8px}}
-
 
 @media print {
     body {
@@ -300,7 +290,7 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   </button>
 
   <p style="color:#758096;font-size:12px;margin-top:20px;">
-   Authorized Personnel Only Â· Offline Device
+   Authorized Personnel Only
   </p>
  </div>
 </div>
@@ -527,7 +517,7 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   <input id="productPrice" type="number" min="0" placeholder="Enter Selling Price">
 
   <label>Stock (PCS)</label>
-  <input id="productStock" type="number" min="0" step="1" placeholder="Enter Stock">
+  <input id="productStock" type="number" placeholder="Enter Stock">
 
   <button class="btn" onclick="saveProduct()">SAVE PRODUCT</button>
   <button class="btn dark" onclick="resetProductForm()">CANCEL / RESET</button>
@@ -1028,7 +1018,6 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
 
 </section>
 
-<footer style="margin:28px 0 8px;color:#7b8495;font-size:11px;text-align:center">Jewelry POS Â· Offline Edition Â· Data is stored on this device</footer>
 </main>
 </div>
 
@@ -1160,15 +1149,9 @@ if(savedLogo){
 
 // JEWELRY POS - PRODUCT MANAGEMENT
 
-let products = readJewelryList('jewelryProducts').map(p=>({
- ...p,
- id:String(p.id ?? ('PRD-'+Date.now()+'-'+Math.random().toString(36).slice(2,7))),
- code:String(p.code ?? ''),
- name:String(p.name ?? ''),
- category:String(p.category ?? ''),
- price:Number.isFinite(Number(p.price)) ? Number(p.price) : 0,
- stock:Number.isFinite(Number(p.stock)) ? Math.max(0,Math.floor(Number(p.stock))) : 0
-}));
+let products = JSON.parse(
+ localStorage.getItem('jewelryProducts') || '[]'
+);
 
 function saveProduct(){
 
@@ -1189,8 +1172,8 @@ function saveProduct(){
   return;
  }
 
- if(!Number.isFinite(price) || price<0 || !Number.isInteger(stock) || stock<0){
-  alert('Price must be zero or more and stock must be a whole number (0 or more).');
+ if(!Number.isFinite(price) || price<0 || !Number.isFinite(stock)){
+  alert('Please enter valid price and stock.');
   return;
  }
 
@@ -1316,7 +1299,9 @@ renderProducts();
  
 // JEWELRY POS - STOCK MANAGEMENT
 
-let stockHistory = readJewelryList('jewelryStockHistory');
+let stockHistory = JSON.parse(
+ localStorage.getItem('jewelryStockHistory') || '[]'
+);
 
 function renderStockManagement(){
  const totalProducts = products.length;
@@ -1396,8 +1381,8 @@ function saveStockMovement(){
   return;
  }
 
- if(!Number.isInteger(qty) || (type==='adjust' ? qty<0 : qty<=0)){
-  alert(type==='adjust' ? 'Adjustment quantity must be a whole number (0 or more).' : 'Please enter a valid quantity greater than zero.');
+ if(!Number.isInteger(qty)||qty<=0){
+  alert('Please enter a valid quantity.');
   return;
  }
 
@@ -1408,7 +1393,6 @@ function saveStockMovement(){
  }
 
  if(type==='out'){
-  if(qty>oldStock){alert('Stock Out quantity exceeds available stock. Available: '+oldStock+' PCS.');return;}
   product.stock=oldStock-qty;
  }
 
@@ -1427,7 +1411,7 @@ function saveStockMovement(){
   productId:product.id,
   item:product.code+' - '+product.name,
   type:typeName,
-  qty:type==='adjust'?`${oldStock} â ${qty}`:qty,
+  qty:type==='adjust'?`${oldStock} Ã¢ÂÂ ${qty}`:qty,
   notes
  });
 
@@ -1612,7 +1596,7 @@ function initializeBill(){
 
  renderBillOptions();
  renderBillCart();
- updateBillTotal();
+ updateBillTotal(true);
 }
 
 function renderBillOptions(){
@@ -1670,11 +1654,6 @@ function addBillItem(){
 
  if(!Number.isInteger(qty)||qty<=0){
   alert('Please enter a valid quantity.');
-  return;
- }
- const alreadyInCart=billCart.filter(item=>!item.manual && item.productId===product.id).reduce((sum,item)=>sum+Number(item.qty||0),0);
- if(alreadyInCart+qty>Number(product.stock||0)){
-  alert('Insufficient stock. Available: '+Math.max(0,Number(product.stock||0)-alreadyInCart)+' PCS.');
   return;
  }
 
@@ -1785,34 +1764,28 @@ function updateBillTotal(resetFinal=false){
  const rate=getCurrencyRate(currency);
  const subtotalDisplay=subtotalUSD*rate;
  const finalInput=document.getElementById('billFinalTotal');
- let finalDisplay=Number(finalInput.value);
- const previousSubtotal=Number(finalInput.dataset.lastSubtotal);
- if(resetFinal || finalInput.value.trim()==='' || !Number.isFinite(finalDisplay) || (Number.isFinite(previousSubtotal) && finalDisplay===previousSubtotal)){
-  finalDisplay=subtotalDisplay;
+
+ // Set the default total only when a new bill starts or the currency changes.
+ // Do not rewrite the field while the cashier is typing a negotiated amount.
+ if(resetFinal || finalInput.dataset.initialized!=='true'){
+  finalInput.value=subtotalDisplay===0?'':(currency==='JPY'||currency==='IDR'?String(Math.round(subtotalDisplay)):String(Number(subtotalDisplay.toFixed(2))));
+  finalInput.dataset.initialized='true';
  }
- if(subtotalDisplay===0){
-  finalInput.value='';
-  finalDisplay=0;
- }else{
-  finalDisplay=Math.max(0,Math.min(finalDisplay,subtotalDisplay));
-  finalInput.value=currency==='JPY' || currency==='IDR' ? String(Math.round(finalDisplay)) : String(Number(finalDisplay.toFixed(2)));
- }
- finalInput.dataset.lastSubtotal=String(subtotalDisplay);
- const discountDisplay=Math.max(0,subtotalDisplay-finalDisplay);
+
+ const rawFinal=finalInput.value.trim();
+ const finalDisplay=rawFinal===''?0:Number(rawFinal);
+ const validFinal=Number.isFinite(finalDisplay)?Math.max(0,finalDisplay):0;
+ const discountDisplay=Math.max(0,subtotalDisplay-validFinal);
  document.getElementById('billSubtotal').value=formatCurrency(subtotalDisplay,currency);
  document.getElementById('billDiscountDisplay').value=formatCurrency(discountDisplay,currency);
- document.getElementById('billGrandTotal').value=formatCurrency(finalDisplay,currency);
+ document.getElementById('billGrandTotal').value=formatCurrency(validFinal,currency);
 }
 
 function saveTransaction(){
- const role=localStorage.getItem('jewelryLoginRole');
- if(!['owner','cashier'].includes(role)){alert('Please login before saving a transaction.');return;}
- const saveButton=document.getElementById('saveTransactionBtn');
- if(saveButton.disabled)return;
- if(!billCart.length){alert('Please add at least one item.');return;}
+ if(!['owner','cashier'].includes(localStorage.getItem('jewelryLoginRole'))){alert('Please login before saving a transaction.');return;}
  const sales=document.getElementById('salesName').value.trim();
  const agentId=document.getElementById('billAgent').value;
- const agent=agents.find(a=>String(a.id)===String(agentId));
+ const agent=agents.find(a=>a.id===agentId);
  const date=document.getElementById('billDate').value;
  const payment=document.getElementById('billPayment').value;
  const currency=document.getElementById('billCurrency').value;
@@ -1821,49 +1794,34 @@ function saveTransaction(){
  const subtotalDisplay=subtotalUSD*rate;
  const finalDisplayInput=document.getElementById('billFinalTotal').value.trim();
  const finalDisplay=Number(finalDisplayInput);
+ if(finalDisplayInput==='' || !Number.isFinite(finalDisplay)){alert('Please enter the negotiated final total.');return;}
+ if(finalDisplay<0 || finalDisplay>subtotalDisplay){alert('Final total must be between zero and the subtotal.');return;}
+ const discountDisplay=subtotalDisplay-finalDisplay;
+ if(!billCart.length){alert('Please add at least one item.');return;}
  if(!sales||!agent||!date||!payment){alert('Please complete Sales Name, Agent, Date and Payment Method.');return;}
- if(!['USD','IDR','JPY'].includes(currency)){alert('Invalid transaction currency.');return;}
- if(!Number.isFinite(rate)||rate<=0){alert('Please set valid USD and JPY exchange rates in Settings.');return;}
- if(finalDisplayInput===''||!Number.isFinite(finalDisplay)||finalDisplay<0||finalDisplay>subtotalDisplay){alert('Final total must be a valid amount between zero and the subtotal.');return;}
+ if((currency!=='USD' && rate<=0)){alert('Please set a valid exchange rate in Settings.');return;}
  const rates=getCommissionRates();
- if(!Number.isFinite(rates.guide)||!Number.isFinite(rates.driver)||rates.guide<0||rates.driver<0||rates.guide>100||rates.driver>100){alert('Please enter valid commission percentages (0â100).');return;}
+ if(rates.guide<0||rates.driver<0||rates.guide>100||rates.driver>100){alert('Please enter valid commission percentages (0Ã¢ÂÂ100).');return;}
  const usdRate=Number(localStorage.getItem('jewelryUSDRate'))||0;
  const jpyRate=Number(localStorage.getItem('jewelryJPYRate'))||0;
- if(usdRate<=0||!Number.isFinite(usdRate)){alert('Please set the USD exchange rate in Settings before saving a transaction.');return;}
- if(currency==='JPY'&&(jpyRate<=0||!Number.isFinite(jpyRate))){alert('Please set the JPY exchange rate in Settings before saving a transaction.');return;}
- // Recheck stock at save time so a stale cart can never create negative inventory.
- const required={};
- billCart.forEach(item=>{if(!item.manual)required[item.productId]=(required[item.productId]||0)+Number(item.qty||0);});
- for(const [productId,qty] of Object.entries(required)){
-  const product=products.find(p=>String(p.id)===String(productId));
-  if(!product||Number(product.stock||0)<qty){alert('Insufficient stock for '+(product?.name||'a selected item')+'. Please refresh the bill.');return;}
- }
- const discountDisplay=subtotalDisplay-finalDisplay;
  const subtotalIDR=Math.round(subtotalUSD*usdRate);
- const grandTotalIDR=Math.round((finalDisplay/rate)*usdRate);
+ const grandDisplay=finalDisplay;
+ const grandTotalIDR=Math.round((grandDisplay/rate)*usdRate);
  const discountIDR=Math.max(0,subtotalIDR-grandTotalIDR);
- const paymentDetails={IDR:currency==='IDR'?Math.round(finalDisplay):0,USD:currency==='USD'?Number(finalDisplay.toFixed(2)):0,JPY:currency==='JPY'?Math.round(finalDisplay):0,usdRate,jpyRate,totalPaidIDR:grandTotalIDR,changeIDR:0};
- const guideAmount=Math.round(grandTotalIDR*rates.guide/100);
- const driverAmount=Math.round(grandTotalIDR*rates.driver/100);
- const bill={id:Date.now().toString()+'-'+Math.random().toString(36).slice(2,7),billNo:document.getElementById('billNo').value,date,sales,agent:agent.name,agentId:agent.id,carPlate:document.getElementById('carPlate').value.trim(),items:billCart.map(item=>({...item,priceIDR:Math.round(item.price*usdRate),priceUSD:item.price,price:Math.round(item.price*usdRate)})),subtotal:subtotalIDR,discount:discountIDR,grandTotal:grandTotalIDR,displaySubtotal:subtotalDisplay,displayDiscount:discountDisplay,displayGrandTotal:finalDisplay,currency,currencyRate:rate,payment,paymentDetails,commissionMode:document.getElementById('commissionMode').value,guidePercent:rates.guide,guideAmount,driverPercent:rates.driver,driverAmount,createdAt:new Date().toISOString()};
- saveButton.disabled=true;
- const oldProducts=JSON.stringify(products),oldHistory=JSON.stringify(stockHistory),oldTransactions=JSON.stringify(transactions);
- try{
-  bill.items.forEach(item=>{if(!item.manual){const product=products.find(p=>String(p.id)===String(item.productId));product.stock=Number(product.stock||0)-Number(item.qty||0);stockHistory.push({date:new Date().toLocaleString('id-ID'),productId:product.id,item:product.code+' - '+product.name,type:'Sale',qty:-Number(item.qty||0),notes:'Bill '+bill.billNo});}});
-  transactions.push(bill);
-  localStorage.setItem('jewelryProducts',JSON.stringify(products));
-  localStorage.setItem('jewelryStockHistory',JSON.stringify(stockHistory));
-  localStorage.setItem('jewelryTransactions',JSON.stringify(transactions));
-  renderProducts();renderStockManagement();renderBillOptions();renderTransactionHistory();updateDashboard();
-  showReceiptPreview(bill);
- }catch(error){
-  products=JSON.parse(oldProducts);stockHistory=JSON.parse(oldHistory);transactions=JSON.parse(oldTransactions);
-  try{localStorage.setItem('jewelryProducts',oldProducts);localStorage.setItem('jewelryStockHistory',oldHistory);localStorage.setItem('jewelryTransactions',oldTransactions);}catch(rollbackError){console.error('Transaction rollback failed',rollbackError);}
-  saveButton.disabled=false;
-  console.error('Transaction save failed',error);
-  alert('Transaction could not be saved. No changes should be considered final. Check available device storage and try again.');
- }
+ if(usdRate<=0){alert('Please set the USD exchange rate in Settings before saving a transaction.');return;}
+ if(currency==='JPY'&&jpyRate<=0){alert('Please set the JPY exchange rate in Settings before saving a transaction.');return;}
+ const paymentDetails={IDR:currency==='IDR'?Math.round(grandDisplay):0,USD:currency==='USD'?grandDisplay:0,JPY:currency==='JPY'?Math.round(grandDisplay):0,usdRate,jpyRate,totalPaidIDR:grandTotalIDR,changeIDR:0};
+ const guideAmount=grandTotalIDR*rates.guide/100;
+ const driverAmount=grandTotalIDR*rates.driver/100;
+ const bill={id:Date.now().toString(),billNo:document.getElementById('billNo').value,date,sales,agent:agent.name,agentId:agent.id,carPlate:document.getElementById('carPlate').value.trim(),items:billCart.map(item=>({...item,priceIDR:Math.round(item.price*usdRate),priceUSD:item.price,price:Math.round(item.price*usdRate)})),subtotal:subtotalIDR,discount:discountIDR,grandTotal:grandTotalIDR,displaySubtotal:subtotalUSD*rate,displayDiscount:discountDisplay,displayGrandTotal:grandDisplay,currency,currencyRate:rate,payment,paymentDetails,commissionMode:document.getElementById('commissionMode').value,guidePercent:rates.guide,guideAmount,driverPercent:rates.driver,driverAmount,createdAt:new Date().toISOString()};
+ const saveButton=document.getElementById('saveTransactionBtn'); if(saveButton.disabled)return; saveButton.disabled=true;
+ bill.items.forEach(item=>{if(!item.manual){const product=products.find(p=>p.id===item.productId);if(product){product.stock=Number(product.stock||0)-item.qty;stockHistory.push({date:new Date().toLocaleString('id-ID'),productId:product.id,item:product.code+' - '+product.name,type:'Sale',qty:-item.qty,notes:'Bill '+bill.billNo});}}});
+ transactions.push(bill);
+ localStorage.setItem('jewelryProducts',JSON.stringify(products));localStorage.setItem('jewelryStockHistory',JSON.stringify(stockHistory));localStorage.setItem('jewelryTransactions',JSON.stringify(transactions));
+ renderProducts();renderStockManagement();renderBillOptions();renderTransactionHistory();updateDashboard();
+ showReceiptPreview(bill);
 }
+
 function resetBill(){
   document.getElementById('saveTransactionBtn').disabled=false;
  billCart=[];
@@ -1873,6 +1831,7 @@ function resetBill(){
  document.getElementById('billPayment').value='';
  if(document.getElementById('billCurrency')) document.getElementById('billCurrency').value='USD';
  document.getElementById('billFinalTotal').value='';
+ document.getElementById('billFinalTotal').dataset.initialized='false';
  document.getElementById('commissionMode').value='normal';
  document.getElementById('guidePercent').value='';
  document.getElementById('driverPercent').value='';
@@ -2209,43 +2168,54 @@ function renderSalesNameOptions(){
 
 
 function backupJewelryData(){
-
     if(localStorage.getItem('jewelryLoginRole')!=='owner'){
         alert('Only Owner can backup Jewelry POS data.');
         return;
     }
 
-    const backup = {
-        app: 'Jewelry POS',
-        version: 1,
-        backupDate: new Date().toISOString(),
-        data: {}
-    };
+    try{
+        const backup = {
+            app: 'Jewelry POS',
+            version: 1,
+            backupDate: new Date().toISOString(),
+            data: {}
+        };
 
-    for(let i = 0; i < localStorage.length; i++){
-        const key = localStorage.key(i);
-        if(key && key.startsWith('jewelry') && key!=='jewelryLoginRole') backup.data[key] = localStorage.getItem(key);
+        // Snapshot every localStorage entry before creating the export file.
+        for(let i=0; i<localStorage.length; i++){
+            const key=localStorage.key(i);
+            if(key!==null) backup.data[key]=localStorage.getItem(key);
+        }
+
+        const json=JSON.stringify(backup, null, 2);
+        if(!json || Object.keys(backup.data).length===0){
+            alert('No Jewelry POS data was found to back up.');
+            return;
+        }
+
+        const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+        if(blob.size===0){
+            alert('Backup file is empty. Backup was not started.');
+            return;
+        }
+
+        const url=URL.createObjectURL(blob);
+        const link=document.createElement('a');
+        const date=new Date().toISOString().slice(0,10);
+        link.href=url;
+        link.download='Jewelry-POS-Backup-'+date+'.json';
+        link.style.display='none';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        // Keep the object URL alive long enough for Android/mobile browsers to start the download.
+        setTimeout(()=>URL.revokeObjectURL(url),60000);
+        alert('Backup download has been started. Please check your device Downloads folder for Jewelry-POS-Backup-'+date+'.json.');
+    }catch(error){
+        console.error('Jewelry POS backup failed:',error);
+        alert('Backup could not be created. Please check browser storage permission and try again.');
     }
-
-    const blob = new Blob(
-        [JSON.stringify(backup, null, 2)],
-        {type: 'application/json'}
-    );
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-
-    link.href = url;
-    link.download = 'Jewelry-POS-Backup-' +
-        new Date().toISOString().slice(0,10) + '.json';
-
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    setTimeout(()=>URL.revokeObjectURL(url), 1500);
-
-    alert('Backup file created successfully.');
 }
 
 
@@ -2285,32 +2255,19 @@ function restoreJewelryData(){
                 throw new Error('Invalid backup file');
             }
 
-            const appData={};
-            for(const key of Object.keys(backup.data)){
-                if(!key.startsWith('jewelry') || key==='jewelryLoginRole' || typeof backup.data[key] !== 'string') continue;
-                appData[key]=backup.data[key];
-                // Validate structured records before changing any saved data.
-                if(['jewelryProducts','jewelryStockHistory','jewelryTransactions','jewelryAgents','jewelrySalesNames'].includes(key)){
-                    const parsed=JSON.parse(backup.data[key]);
-                    if(!Array.isArray(parsed)) throw new Error('Invalid list data: '+key);
+            for(const key in backup.data){
+                if(typeof backup.data[key] !== 'string'){
+                    throw new Error('Invalid backup data');
                 }
             }
-            if(!Object.keys(appData).length) throw new Error('No Jewelry POS data found');
-            const previous={};
-            for(let i=0;i<localStorage.length;i++){
-                const key=localStorage.key(i);
-                if(key && key.startsWith('jewelry')) previous[key]=localStorage.getItem(key);
-            }
-            try{
-                Object.keys(previous).forEach(key=>localStorage.removeItem(key));
-                for(const key of Object.keys(appData)) localStorage.setItem(key,appData[key]);
-            }catch(writeError){
-                Object.keys(previous).forEach(key=>localStorage.setItem(key,previous[key]));
-                throw writeError;
+
+            localStorage.clear();
+
+            for(const key in backup.data){
+                localStorage.setItem(key, backup.data[key]);
             }
 
-            localStorage.removeItem('jewelryLoginRole');
-            alert('Backup restored successfully. Please login again. Application will reload.');
+            alert('Backup restored successfully. Application will reload.');
 
             location.reload();
 
@@ -3271,7 +3228,7 @@ function showReceiptPreview(bill){
   let unit=usd;
   if(currency==='IDR') unit=usd*(Number(bill.paymentDetails?.usdRate)||0);
   if(currency==='JPY') unit=usd*(Number(bill.paymentDetails?.usdRate)||0)/(Number(bill.paymentDetails?.jpyRate)||1);
-  return `<tr><td>${safe(item.name)}<small>${Number(item.qty||0)} Ã ${fmt(unit)}</small></td><td>${fmt(unit*Number(item.qty||0))}</td></tr>`;
+  return `<tr><td>${safe(item.name)}<small>${Number(item.qty||0)} ÃÂ ${fmt(unit)}</small></td><td>${fmt(unit*Number(item.qty||0))}</td></tr>`;
  }).join('');
  const logo=localStorage.getItem('jewelryStoreLogo')||'';
  const logoHtml=logo?`<img src="${logo}" alt="Store logo" style="max-width:90px;max-height:65px;object-fit:contain;display:block;margin:0 auto 8px">`:'';
