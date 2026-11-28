@@ -1798,6 +1798,255 @@ th {
   }
 }
 
+/* =====================================
+   LUXURY GOLD - AGENTS & SETTINGS
+===================================== */
+
+#agents,
+#settings {
+  color: #263247;
+}
+
+#agents > h2,
+#settings > h2 {
+  color: #17243a;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.7px;
+  margin-bottom: 26px;
+}
+
+#agents > h2::after,
+#settings > h2::after {
+  content: "";
+  display: block;
+  width: 55px;
+  height: 3px;
+  margin-top: 12px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #b89555, #e5d2a8);
+}
+
+/* PREMIUM CARDS */
+
+#agents > .card,
+#settings > .card {
+  padding: 25px;
+  margin-bottom: 22px;
+  background: linear-gradient(145deg, #fff, #fcfaf6);
+  border: 1px solid #e9e0d0;
+  border-radius: 17px;
+  box-shadow: 0 8px 26px rgba(35, 43, 55, .055);
+}
+
+#agents .card h3,
+#settings .card h3 {
+  color: #17243a;
+  font-size: 17px;
+  font-weight: 700;
+  padding-bottom: 13px;
+  margin-bottom: 19px;
+  border-bottom: 1px solid #eee7da;
+}
+
+/* LABELS */
+
+#agents label,
+#settings label {
+  display: block;
+  color: #6e7480;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .45px;
+  margin: 15px 0 7px;
+}
+
+/* INPUTS */
+
+#agents input,
+#settings input,
+#settings select {
+  width: 100%;
+  min-height: 45px;
+  padding: 11px 13px;
+  color: #263247;
+  background: #fff;
+  border: 1px solid #e5dfd3;
+  border-radius: 9px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+#agents input:focus,
+#settings input:focus,
+#settings select:focus {
+  border-color: #b89555;
+  box-shadow: 0 0 0 3px rgba(184, 149, 85, .12);
+}
+
+/* FILE INPUT */
+
+#settings input[type="file"] {
+  min-height: auto;
+  padding: 12px;
+  background: #faf8f3;
+}
+
+/* BUTTONS */
+
+#agents .btn,
+#settings .btn {
+  min-height: 44px;
+  padding: 11px 20px;
+  margin-top: 12px;
+  border: 1px solid #b89555;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #b89555, #d2b77f);
+  color: #17243a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  box-shadow: 0 5px 13px rgba(184, 149, 85, .16);
+  transition: transform .2s, box-shadow .2s;
+}
+
+#agents .btn:hover,
+#settings .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(184, 149, 85, .23);
+}
+
+#agents .btn.dark,
+#settings .btn.dark {
+  background: #17243a;
+  color: #e8d3aa;
+  border-color: #17243a;
+}
+
+/* TABLES */
+
+#agents table,
+#settings table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#agents table thead,
+#settings table thead {
+  background: #17243a;
+}
+
+#agents table th,
+#settings table th {
+  padding: 14px 12px;
+  color: #e8d3aa;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-align: left;
+}
+
+#agents table td,
+#settings table td {
+  padding: 13px 12px;
+  color: #394355;
+  border-bottom: 1px solid #eee9df;
+  font-size: 13px;
+}
+
+#agents table tbody tr:hover,
+#settings table tbody tr:hover {
+  background: #fcfaf5;
+}
+
+/* EXCHANGE RATE CARD */
+
+#exchangeRateCard {
+  border-left: 4px solid #b89555;
+}
+
+#exchangeRateCard p {
+  color: #858b96;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* SALES NAME SETTINGS */
+
+#salesNameSettingsCard {
+  border-left: 4px solid #b89555;
+}
+
+/* PRINTER SETTINGS */
+
+#printer1Card,
+#printer2Card {
+  position: relative;
+  overflow: hidden;
+}
+
+#printer1Card::before,
+#printer2Card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #b89555, #e5d2a8);
+}
+
+#printer1Status,
+#printer2Status {
+  color: #98743d;
+  font-weight: 700;
+}
+
+/* BACKUP CARD */
+
+#settings .card:has(button[onclick="backupJewelryData()"]) {
+  border-left: 4px solid #b89555;
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+  #agents > h2,
+  #settings > h2 {
+    font-size: 23px;
+  }
+
+  #agents > .card,
+  #settings > .card {
+    padding: 17px;
+    margin-bottom: 16px;
+    border-radius: 14px;
+  }
+
+  #agents .card h3,
+  #settings .card h3 {
+    font-size: 15px;
+  }
+
+  #agents input,
+  #settings input,
+  #settings select {
+    min-height: 43px;
+    font-size: 13px;
+  }
+
+  #agents .btn,
+  #settings .btn {
+    width: 100%;
+  }
+
+  #agents table,
+  #settings table {
+    min-width: 350px;
+  }
+}
+
 </style>
 </head>
  
