@@ -1542,6 +1542,262 @@ th {
   }
 }
 
+/* =====================================
+   LUXURY GOLD - HISTORY & REPORTS
+===================================== */
+
+#history,
+#reports {
+  color: #263247;
+}
+
+#history > h2,
+#reports > h2 {
+  color: #17243a;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.7px;
+  margin-bottom: 26px;
+}
+
+#history > h2::after,
+#reports > h2::after {
+  content: "";
+  display: block;
+  width: 55px;
+  height: 3px;
+  margin-top: 12px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #b89555, #e5d2a8);
+}
+
+/* CARDS */
+
+#history > .card,
+#reports > .card {
+  padding: 25px;
+  margin-bottom: 22px;
+  background: linear-gradient(145deg, #fff, #fcfaf6);
+  border: 1px solid #e9e0d0;
+  border-radius: 17px;
+  box-shadow: 0 8px 26px rgba(35, 43, 55, .055);
+}
+
+#history .card h3,
+#reports .card h3 {
+  color: #17243a;
+  font-size: 17px;
+  font-weight: 700;
+  padding-bottom: 13px;
+  margin-bottom: 19px;
+  border-bottom: 1px solid #eee7da;
+}
+
+/* FILTER LABELS */
+
+#history label,
+#reports label {
+  display: block;
+  color: #6e7480;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .45px;
+  margin: 15px 0 7px;
+}
+
+/* FILTER INPUTS */
+
+#history input,
+#reports input,
+#reports select {
+  width: 100%;
+  min-height: 45px;
+  padding: 11px 13px;
+  color: #263247;
+  background: #fff;
+  border: 1px solid #e5dfd3;
+  border-radius: 9px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+#history input:focus,
+#reports input:focus,
+#reports select:focus {
+  border-color: #b89555;
+  box-shadow: 0 0 0 3px rgba(184, 149, 85, .12);
+}
+
+/* BUTTONS */
+
+#history .btn,
+#reports .btn {
+  min-height: 44px;
+  padding: 11px 20px;
+  margin-top: 12px;
+  border: 1px solid #b89555;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #b89555, #d2b77f);
+  color: #17243a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  box-shadow: 0 5px 13px rgba(184, 149, 85, .16);
+}
+
+#history .btn.dark,
+#reports .btn.dark {
+  background: #17243a;
+  color: #e8d3aa;
+  border-color: #17243a;
+}
+
+/* TABLES */
+
+#history table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+}
+
+#history table thead {
+  background: #17243a;
+}
+
+#history table th {
+  padding: 14px 12px;
+  color: #e8d3aa;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+#history table td {
+  padding: 13px 12px;
+  color: #394355;
+  border-bottom: 1px solid #eee9df;
+  font-size: 13px;
+}
+
+#history table tbody tr:hover {
+  background: #fcfaf5;
+}
+
+/* TRANSACTION DETAIL */
+
+#transactionDetail {
+  border: 1px solid #d9c49d;
+  background: #fffdf8;
+}
+
+#transactionDetailContent {
+  color: #394355;
+  line-height: 1.7;
+}
+
+/* REPORT STORE HEADER */
+
+#reportStoreHeader,
+#agentReportHeader {
+  padding: 22px 12px;
+  border: 1px solid #e9e0d0;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #fffdf8, #f7f3e9);
+}
+
+#reportStoreName,
+#agentReportStoreName {
+  color: #17243a;
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin: 12px 0;
+}
+
+#reportStoreHeader h3,
+#agentReportHeader h3 {
+  color: #98743d;
+}
+
+#reportPeriod,
+#agentReportPeriod,
+#agentReportName {
+  color: #7e8490;
+  font-size: 12px;
+}
+
+/* REPORT OUTPUT */
+
+#reportSummary,
+#reportDetails,
+#agentReportSummary,
+#agentReportDetails {
+  color: #394355;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+
+#reports table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#reports table th {
+  padding: 12px;
+  color: #e8d3aa;
+  background: #17243a;
+  font-size: 11px;
+  text-align: left;
+}
+
+#reports table td {
+  padding: 12px;
+  color: #394355;
+  border-bottom: 1px solid #eee9df;
+  font-size: 13px;
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+  #history > h2,
+  #reports > h2 {
+    font-size: 23px;
+  }
+
+  #history > .card,
+  #reports > .card {
+    padding: 17px;
+    margin-bottom: 16px;
+    border-radius: 14px;
+  }
+
+  #history .card h3,
+  #reports .card h3 {
+    font-size: 15px;
+  }
+
+  #history input,
+  #reports input,
+  #reports select {
+    min-height: 43px;
+    font-size: 13px;
+  }
+
+  #history .btn,
+  #reports .btn {
+    width: 100%;
+  }
+
+  #reportStoreName,
+  #agentReportStoreName {
+    font-size: 19px;
+  }
+}
+
 </style>
 </head>
  
