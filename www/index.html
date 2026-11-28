@@ -829,6 +829,25 @@ th {
     height: 130px;
   }
 }
+ #loginLogo {
+  display: block;
+  width: 85px;
+  height: 85px;
+  object-fit: contain;
+  margin: 0 auto 18px;
+}
+
+#loginLogo[hidden] {
+  display: none !important;
+}
+
+#loginStoreName {
+  color: #17243a !important;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+}
 
 </style>
 </head>
@@ -1702,6 +1721,10 @@ function saveStore(){
     if(topName){
         topName.textContent = name;
     }
+ const loginName = document.getElementById('loginStoreName');
+if(loginName){
+    loginName.textContent = name;
+}
 
     alert('Store profile saved successfully.');
 }
@@ -1712,6 +1735,7 @@ document.getElementById('billDate').value=new Date().toISOString().slice(0,10);
 const savedName=localStorage.getItem('jewelryStoreName');
 if(savedName){
  document.getElementById('topStoreName').textContent=savedName;
+ document.getElementById('loginStoreName').textContent=savedName;
  document.getElementById('storeNameInput').value=savedName;
 }
 
@@ -1735,6 +1759,11 @@ document.getElementById('logoInput').addEventListener('change',function(e){
   const logo=document.getElementById('topLogo');
   logo.src=reader.result;
   logo.hidden=false;
+  const loginLogo = document.getElementById('loginLogo');
+if(loginLogo){
+    loginLogo.src = reader.result;
+    loginLogo.hidden = false;
+}
  };
 
  reader.readAsDataURL(file);
@@ -1746,6 +1775,11 @@ if(savedLogo){
  const logo=document.getElementById('topLogo');
  logo.src=savedLogo;
  logo.hidden=false;
+const loginLogo = document.getElementById('loginLogo');
+if(loginLogo){
+    loginLogo.src = savedLogo;
+    loginLogo.hidden = false;
+} 
 }
 
 // JEWELRY POS - PRODUCT MANAGEMENT
