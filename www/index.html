@@ -4631,20 +4631,93 @@ function updateReportStoreHeader(){
     }
 }
 
-function saveReportPDF(){
+async function saveReportPDF(){
+
     updateReportStoreHeader();
 
-    const oldTitle = document.title;
-    document.title = 'Jewelry-POS-Sales-Report';
-
-    if(typeof window.print === 'function'){
-        window.print();
-    }else{
-        alert('PDF printing is not available.');
+    if(!PDFPrinter){
+        alert('Android PDF plugin is not available. Please rebuild the APK.');
+        return;
     }
 
-    document.title = oldTitle;
+    const reportHeader = document.getElementById('reportStoreHeader');
+    const reportSummary = document.getElementById('reportSummary');
+    const reportDetails = document.getElementById('reportDetails');
+
+    if(!reportHeader || !reportSummary || !reportDetails){
+        alert('Sales report content not found.');
+        return;
+    }
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Jewelry POS Sales Report</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                color: #222;
+                padding: 25px;
+                font-size: 12px;
+            }
+            h2, h3, p {
+                text-align: center;
+            }
+            h2 {
+                margin-bottom: 5px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 12px 0;
+            }
+            th, td {
+                border: 1px solid #ccc;
+                padding: 7px;
+                text-align: left;
+                word-break: break-word;
+            }
+            th {
+                background: #eee;
+            }
+            img {
+                max-width: 100px;
+                max-height: 100px;
+                object-fit: contain;
+            }
+            .card {
+                margin-bottom: 20px;
+            }
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+        </style>
+    </head>
+    <body>
+        ${reportHeader.outerHTML}
+        <div class="card">
+            <h3>Report Summary</h3>
+            ${reportSummary.innerHTML}
+        </div>
+        <div class="card">
+            <h3>Transaction Details</h3>
+            ${reportDetails.innerHTML}
+        </div>
+    </body>
+    </html>`;
+
+    try {
+        await PDFPrinter.savePDF({html: html});
+    } catch(error) {
+        alert('Unable to create PDF: ' + error.message);
+    }
 }
+
+
 function viewAgentReport(){
 
     const agent = document.getElementById('agentReportSelect').value;
