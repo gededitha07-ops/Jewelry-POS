@@ -4068,112 +4068,133 @@ function renderSalesNameOptions(){
 
 
 async function backupJewelryData(){
+
     if(localStorage.getItem('jewelryLoginRole')!=='owner'){
         alert('Only Owner can backup Jewelry POS data.');
         return;
     }
 
-    const backupButton=document.querySelector('button[onclick="backupJewelryData()"]');
-    if(backupButton){backupButton.disabled=true;backupButton.textContent='CREATING BACKUP...';}
+    const backupButton=document.querySelector(
+        'button[onclick="backupJewelryData()"]'
+    );
+
+    if(backupButton){
+        backupButton.disabled=true;
+        backupButton.textContent='CREATING BACKUP...';
+    }
 
     try{
-        // Copy all POS localStorage entries without changing their stored values.
-        const backup={app:'Jewelry POS',version:2,backupDate:new Date().toISOString(),data:{}};
+
+        const backup={
+            app:'Jewelry POS',
+            version:2,
+            backupDate:new Date().toISOString(),
+            data:{}
+        };
+
         for(let i=0;i<localStorage.length;i++){
             const key=localStorage.key(i);
-            if(key!==null) backup.data[key]=localStorage.getItem(key);
+
+            if(key!==null){
+                backup.data[key]=localStorage.getItem(key);
+            }
         }
-        if(Object.keys(backup.data).length===0) throw new Error('No Jewelry POS data was found to back up.');
+
+        if(Object.keys(backup.data).length===0){
+            throw new Error('No Jewelry POS data found.');
+        }
 
         const json=JSON.stringify(backup,null,2);
-        if(!json) throw new Error('Backup data could not be converted to JSON.');
+
+        if(!json){
+            throw new Error('Backup JSON could not be created.');
+        }
 
         const now=new Date();
-        const stamp=now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+
-            String(now.getDate()).padStart(2,'0')+'-'+String(now.getHours()).padStart(2,'0')+
-            String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
+
+        const stamp=
+            now.getFullYear()+
+            String(now.getMonth()+1).padStart(2,'0')+
+            String(now.getDate()).padStart(2,'0')+'-'+
+            String(now.getHours()).padStart(2,'0')+
+            String(now.getMinutes()).padStart(2,'0')+
+            String(now.getSeconds()).padStart(2,'0');
+
         const fileName='Jewelry-POS-Backup-'+stamp+'.json';
-        const blob=new Blob([json],{type:'application/json;charset=utf-8'});
-        if(!blob.size) throw new Error('The generated backup file is empty.');
-        const file=(typeof File==='function')?new File([blob],fileName,{type:'application/json'}):null;
 
-        // Capacitor Android: write a real file to the public Documents folder.
-        const plugins=window.Capacitor?.Plugins||{};
-        const filesystem=plugins.Filesystem;
-        const sharePlugin=plugins.Share;
-        if(filesystem && typeof filesystem.writeFile==='function'){
-            const saved=await filesystem.writeFile({
-                path:fileName,
-                data:json,
-                directory:'DOCUMENTS',
-                encoding:'utf8',
-                recursive:true
+        // Android APK backup using native storage picker
+        if(PDFPrinter && typeof PDFPrinter.saveBackup==='function'){
+
+            const result=await PDFPrinter.saveBackup({
+                content:json,
+                fileName:fileName
             });
-            if(!saved || !saved.uri) throw new Error('Android did not return a saved-file location.');
-            if(sharePlugin && typeof sharePlugin.share==='function'){
-                try{
-                    await sharePlugin.share({title:'Jewelry POS Backup',text:'Jewelry POS data backup',url:saved.uri});
-                }catch(shareError){
-                    // The file is already safely written in Documents even if sharing is cancelled.
-                    if(shareError?.name!=='AbortError') console.warn('Backup share sheet:',shareError);
-                }
+
+            if(!result || result.saved!==true){
+                throw new Error('Android did not confirm backup saving.');
             }
-            alert('Backup file saved in the device Documents folder: '+fileName);
+
+            alert(
+                'BACKUP SUCCESSFUL!\n\n'+
+                'File: '+fileName+
+                '\n\nYour backup has been saved to the selected folder.'
+            );
+
             return;
         }
 
-        // Android Chrome / supported browsers: open the system share sheet with the actual file.
-        if(file && typeof navigator.share==='function' && typeof navigator.canShare==='function' && navigator.canShare({files:[file]})){
-            await navigator.share({files:[file],title:'Jewelry POS Backup',text:'Save this Jewelry POS backup file.'});
-            alert('Backup file was handed to the Android share menu. Please choose Save or Files to finish saving it.');
-            return;
+        // Browser fallback
+        const blob=new Blob(
+            [json],
+            {type:'application/json;charset=utf-8'}
+        );
+
+        if(!blob.size){
+            throw new Error('Backup file is empty.');
         }
 
-        // Browser fallback: show a persistent download link and do not claim it is saved yet.
-        if(window.__jewelryBackupUrl) URL.revokeObjectURL(window.__jewelryBackupUrl);
         const url=URL.createObjectURL(blob);
-        window.__jewelryBackupUrl=url;
-        let linkBox=document.getElementById('backupDownloadLink');
-        if(!linkBox){
-            linkBox=document.createElement('div');
-            linkBox.id='backupDownloadLink';
-            linkBox.style.cssText='margin-top:12px;padding:12px;border:1px solid #b58a3a;border-radius:8px;background:#fffaf0;';
-            const cards=Array.from(document.querySelectorAll('#settings .card'));
-            const backupCard=cards.find(card=>card.querySelector('button[onclick="backupJewelryData()"]'));
-            if(backupCard) backupCard.appendChild(linkBox);
-            else document.getElementById('restoreFile')?.parentElement?.appendChild(linkBox);
-        }
-        linkBox.replaceChildren();
-        const message=document.createElement('p');
-        message.textContent='Backup file is ready ('+Math.ceil(blob.size/1024)+' KB). Tap the button below and check your Downloads folder.';
-        message.style.margin='0 0 8px';
-        const downloadLink=document.createElement('a');
-        downloadLink.href=url;
-        downloadLink.download=fileName;
-        downloadLink.textContent='DOWNLOAD BACKUP FILE';
-        downloadLink.style.cssText='display:inline-block;padding:11px 16px;background:#17243d;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold;';
-        linkBox.append(message,downloadLink);
-        try{
-            const trigger=document.createElement('a');
-            trigger.href=url;
-            trigger.download=fileName;
-            trigger.style.display='none';
-            document.body.appendChild(trigger);
-            trigger.click();
-            trigger.remove();
-        }catch(downloadError){console.warn('Automatic backup download was blocked:',downloadError);}
-        alert('Backup file is ready. If it did not download automatically, tap DOWNLOAD BACKUP FILE in Settings.');
+
+        const link=document.createElement('a');
+        link.href=url;
+        link.download=fileName;
+        link.style.display='none';
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(()=>{
+            URL.revokeObjectURL(url);
+        },60000);
+
+        alert(
+            'Backup file is ready. Please check your Downloads folder.'
+        );
+
     }catch(error){
+
         console.error('Jewelry POS backup failed:',error);
+
         if(error?.name==='AbortError'){
-            alert('The save/share menu was closed. Please try BACKUP DATA again and complete the save action.');
+            alert('Backup cancelled. No file was saved.');
         }else{
-            alert('Backup failed: '+(error?.message||'Unknown error')+'. Please try again.');
+            alert(
+                'Backup failed: '+
+                (error?.message||'Unknown error')
+            );
         }
+
     }finally{
-        if(backupButton){backupButton.disabled=false;backupButton.textContent='BACKUP DATA';}
+
+        if(backupButton){
+            backupButton.disabled=false;
+            backupButton.textContent='BACKUP DATA';
+        }
     }
 }
+
+
 
 function restoreJewelryData(){
 
