@@ -1024,6 +1024,254 @@ th {
 }
 
 
+/* =================================
+   LUXURY GOLD - CASHIER PAGE
+================================= */
+
+#cashier {
+  color: #263247;
+}
+
+#cashier > h2 {
+  color: #17243a;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.7px;
+  margin-bottom: 26px;
+}
+
+#cashier > h2::after {
+  content: "";
+  display: block;
+  width: 55px;
+  height: 3px;
+  margin-top: 12px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #b89555, #e5d2a8);
+}
+
+/* PREMIUM CARDS */
+
+#cashier > .card {
+  background: linear-gradient(145deg, #ffffff, #fcfaf6);
+  border: 1px solid #e9e0d0;
+  border-radius: 17px;
+  padding: 25px;
+  margin-bottom: 22px;
+  box-shadow: 0 8px 26px rgba(35, 43, 55, .055);
+}
+
+#cashier .card h3 {
+  color: #17243a;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  padding-bottom: 13px;
+  margin-bottom: 19px;
+  border-bottom: 1px solid #eee7da;
+}
+
+#cashier label {
+  display: block;
+  color: #6e7480;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .45px;
+  margin: 15px 0 7px;
+}
+
+/* INPUTS AND SELECTS */
+
+#cashier input,
+#cashier select {
+  width: 100%;
+  min-height: 45px;
+  padding: 11px 13px;
+  color: #263247;
+  background: #fff;
+  border: 1px solid #e5dfd3;
+  border-radius: 9px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+#cashier input:focus,
+#cashier select:focus {
+  border-color: #b89555;
+  box-shadow: 0 0 0 3px rgba(184, 149, 85, .12);
+}
+
+#cashier input[readonly] {
+  background: #f7f5f0;
+  color: #17243a;
+  font-weight: 700;
+}
+
+/* MANUAL FINAL TOTAL */
+
+#billFinalTotal {
+  min-height: 50px;
+  border: 1.5px solid #b89555;
+  background: #fffdf8;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+#billFinalTotal:focus {
+  border-color: #98743d;
+  box-shadow: 0 0 0 4px rgba(184, 149, 85, .15);
+}
+
+#cashier #billDiscountDisplay {
+  color: #98743d;
+  font-weight: 700;
+}
+
+#cashier #billGrandTotal {
+  min-height: 54px;
+  background: #17243a;
+  color: #e8d3aa;
+  border: 1px solid #b89555;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+/* HELP TEXT */
+
+#cashier small {
+  display: block;
+  color: #92909a;
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 7px;
+}
+
+#cashier p {
+  color: #858b96;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* BUTTONS */
+
+#cashier .btn {
+  min-height: 44px;
+  padding: 11px 20px;
+  border: 1px solid #b89555;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #b89555, #d2b77f);
+  color: #17243a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .7px;
+  box-shadow: 0 5px 13px rgba(184, 149, 85, .16);
+  transition: transform .2s, box-shadow .2s;
+}
+
+#cashier .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(184, 149, 85, .23);
+}
+
+#cashier .btn.dark {
+  background: #17243a;
+  color: #e8d3aa;
+  border-color: #17243a;
+}
+
+#cashier #saveTransactionBtn {
+  width: 100%;
+  min-height: 53px;
+  margin-top: 5px;
+  background: linear-gradient(135deg, #17243a, #30445f);
+  color: #e8d3aa;
+  border: 1px solid #b89555;
+  font-size: 13px;
+  letter-spacing: 1.1px;
+}
+
+/* ORDER TABLE */
+
+#cashier table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+}
+
+#cashier table thead {
+  background: #17243a;
+}
+
+#cashier table th {
+  padding: 14px 12px;
+  color: #e8d3aa;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+#cashier table td {
+  padding: 13px 12px;
+  color: #394355;
+  border-bottom: 1px solid #eee9df;
+  font-size: 13px;
+}
+
+#cashier table tbody tr:hover {
+  background: #fcfaf5;
+}
+
+/* COMMISSION CUSTOM FIELDS */
+
+#customCommissionFields {
+  padding: 15px;
+  margin-top: 15px;
+  border: 1px solid #e8dcc5;
+  border-radius: 12px;
+  background: #faf7f0;
+}
+
+#customCommissionFields[hidden] {
+  display: none !important;
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+  #cashier > h2 {
+    font-size: 23px;
+    margin-bottom: 20px;
+  }
+
+  #cashier > .card {
+    padding: 17px;
+    margin-bottom: 16px;
+    border-radius: 14px;
+  }
+
+  #cashier .card h3 {
+    font-size: 15px;
+  }
+
+  #cashier input,
+  #cashier select {
+    min-height: 43px;
+    font-size: 13px;
+  }
+
+  #cashier .btn {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  #cashier #saveTransactionBtn {
+    min-height: 50px;
+  }
+}
+
 </style>
 </head>
  
