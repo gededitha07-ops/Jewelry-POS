@@ -3392,6 +3392,7 @@ function logout(){
  document.querySelector('.sidebar button').classList.add('active');
 }
 
+
 async function printCustomerReceipt(bill){
 
  if(!BluetoothPrinter){
@@ -3399,87 +3400,95 @@ async function printCustomerReceipt(bill){
   return;
  }
 
- const width = localStorage.getItem('jewelryPrinter1Width') || '80';
- const lineWidth = width === '58' ? 32 : 48;
- const separator = '-'.repeat(lineWidth);
+ const width=localStorage.getItem('jewelryPrinter1Width')||'80';
+ const lineWidth=width==='58'?32:48;
+ const separator='-'.repeat(lineWidth);
+ const currency=bill.currency||'IDR';
+ const pd=bill.paymentDetails||{};
 
- const storeName =
-  localStorage.getItem('jewelryStoreName') || 'Jewelry POS';
+ const subtotal=Number(bill.displaySubtotal??bill.subtotal)||0;
+ const discount=Number(bill.displayDiscount??bill.discount)||0;
+ const grandTotal=Math.max(0,subtotal-discount);
 
- const pd = bill.paymentDetails || {};
+ const storeName=localStorage.getItem('jewelryStoreName')||'Jewelry POS';
 
  function wrapText(value){
-  const words = String(value ?? '').split(' ');
-  const lines = [];
-  let line = '';
+  const words=String(value??'').split(' ');
+  const lines=[];
+  let line='';
 
   words.forEach(word=>{
-   if((line + ' ' + word).trim().length > lineWidth){
-    if(line) lines.push(line);
-    line = word;
+   if((line+' '+word).trim().length>lineWidth){
+    if(line)lines.push(line);
+    line=word;
    }else{
-    line = (line + ' ' + word).trim();
+    line=(line+' '+word).trim();
    }
   });
 
-  if(line) lines.push(line);
+  if(line)lines.push(line);
   return lines;
  }
 
- let receipt = '';
+ function getItemPrice(item){
+  const usd=Number(item.priceUSD??(
+   Number(item.price||0)/(Number(pd.usdRate)||1)
+  ));
 
- receipt += storeName + '\n';
- receipt += separator + '\n';
- receipt += 'CUSTOMER RECEIPT\n';
- receipt += separator + '\n';
- receipt += 'Bill No: ' + bill.billNo + '\n';
- receipt += 'Date: ' + bill.date + '\n';
- receipt += 'Sales: ' + bill.sales + '\n';
- receipt += separator + '\n';
+  if(currency==='USD')return usd;
+  if(currency==='JPY'){
+   return usd*(Number(pd.usdRate)||0)/(Number(pd.jpyRate)||1);
+  }
+  return usd*(Number(pd.usdRate)||0);
+ }
 
- (bill.items || []).forEach(item=>{
+ let receipt='';
+ receipt+=storeName+'\n';
+ receipt+=separator+'\n';
+ receipt+='CUSTOMER RECEIPT\n';
+ receipt+=separator+'\n';
+ receipt+='Bill No: '+(bill.billNo||'-')+'\n';
+ receipt+='Date: '+(bill.date||'-')+'\n';
+ receipt+='Sales: '+(bill.sales||'-')+'\n';
+ receipt+=separator+'\n';
+
+ (bill.items||[]).forEach(item=>{
   wrapText(item.name).forEach(line=>{
-   receipt += line + '\n';
+   receipt+=line+'\n';
   });
 
-  const itemPrice= bill.currency==='USD' ? Number(item.priceUSD??(item.price/(bill.paymentDetails?.usdRate||1))) : bill.currency==='JPY' ? Number(item.priceUSD??(item.price/(bill.paymentDetails?.usdRate||1)))*(bill.paymentDetails?.usdRate||1)/(bill.paymentDetails?.jpyRate||1) : Number(item.price);
-  receipt += item.qty + ' x ' + formatCurrency(itemPrice,bill.currency||'IDR') + ' = ' + formatCurrency(itemPrice*item.qty,bill.currency||'IDR') + '\n';
+  const qty=Number(item.qty)||0;
+  const price=getItemPrice(item);
+
+  receipt+=qty+' x '+formatCurrency(price,currency)+
+   ' = '+formatCurrency(price*qty,currency)+'\n';
  });
 
- receipt += separator + '\n';
- receipt += 'Subtotal: ' + formatCurrency(bill.displaySubtotal??bill.subtotal,bill.currency||'IDR') + '\n';
- receipt += 'Discount: ' + formatCurrency(bill.displayDiscount??bill.discount,bill.currency||'IDR') + '\n';
- receipt += separator + '\n';
- receipt += 'GRAND TOTAL\n';
- receipt += formatCurrency(bill.displayGrandTotal??bill.grandTotal,bill.currency||'IDR') + '\n';
- receipt += separator + '\n';
+ receipt+=separator+'\n';
+ receipt+='Subtotal: '+formatCurrency(subtotal,currency)+'\n';
+ receipt+='Discount: '+formatCurrency(discount,currency)+'\n';
+ receipt+=separator+'\n';
+ receipt+='GRAND TOTAL\n';
+ receipt+=formatCurrency(grandTotal,currency)+'\n';
+ receipt+=separator+'\n';
+ receipt+='CURRENCY: '+currency+'\n';
+ receipt+='USD RATE: 1 USD = '+rupiah(pd.usdRate||0)+'\n';
+ receipt+='JPY RATE: 1 JPY = '+rupiah(pd.jpyRate||0)+'\n';
+ receipt+='PAYMENT: '+(bill.payment||'-')+'\n';
+ receipt+=separator+'\n';
+ receipt+='Thank you for your purchase!\n\n\n';
 
- receipt += 'CURRENCY: ' + (bill.currency||'IDR') + '\n';
- receipt += 'USD RATE: 1 USD = ' + rupiah(pd.usdRate||0) + '\n';
- receipt += 'JPY RATE: 1 JPY = ' + rupiah(pd.jpyRate||0) + '\n';
- receipt += 'PAYMENT: ' + (bill.payment || '-') + '\n';
-
- receipt += separator + '\n';
- receipt += 'Thank you for your purchase!\n';
- receipt += '\n\n';
-
- try{
-  await BluetoothPrinter.print({
-   printerId: 'printer1',
-   text: receipt,
-   logoBase64: localStorage.getItem('jewelryStoreLogo') || '',
-   paperWidth: Number(width)
+ await BluetoothPrinter.print({
+  printerId:'printer1',
+  text:receipt,
+  logoBase64:localStorage.getItem('jewelryStoreLogo')||'',
+  paperWidth:Number(width)
 });
 
-  alert('Customer Receipt sent to Printer 1.');
-  
-}catch(error){
-  throw error;
-}
- 
+ alert('Customer Receipt sent to Printer 1.');
 }
 
- 
+
 async function printInternalReceipt(bill){
 
  if(!BluetoothPrinter){
@@ -3487,127 +3496,127 @@ async function printInternalReceipt(bill){
   return;
  }
 
- const width = localStorage.getItem('jewelryPrinter2Width') || '80';
- const lineWidth = width === '58' ? 32 : 48;
- const separator = '-'.repeat(lineWidth);
+ const width=localStorage.getItem('jewelryPrinter2Width')||'80';
+ const lineWidth=width==='58'?32:48;
+ const separator='-'.repeat(lineWidth);
+ const currency=bill.currency||'IDR';
+ const pd=bill.paymentDetails||{};
 
- const storeName =
-  localStorage.getItem('jewelryStoreName') || 'Jewelry POS';
+ const subtotal=Number(bill.displaySubtotal??bill.subtotal)||0;
+ const discount=Number(bill.displayDiscount??bill.discount)||0;
+ const grandTotal=Math.max(0,subtotal-discount);
 
- const pd = bill.paymentDetails || {};
+ const storeName=localStorage.getItem('jewelryStoreName')||'Jewelry POS';
 
  function wrapText(value){
-  const words = String(value ?? '').split(' ');
-  const lines = [];
-  let line = '';
+  const words=String(value??'').split(' ');
+  const lines=[];
+  let line='';
 
   words.forEach(word=>{
-   if((line + ' ' + word).trim().length > lineWidth){
-    if(line) lines.push(line);
-    line = word;
+   if((line+' '+word).trim().length>lineWidth){
+    if(line)lines.push(line);
+    line=word;
    }else{
-    line = (line + ' ' + word).trim();
+    line=(line+' '+word).trim();
    }
   });
 
-  if(line) lines.push(line);
+  if(line)lines.push(line);
   return lines;
  }
 
- let receipt = '';
+ function getItemPrice(item){
+  const usd=Number(item.priceUSD??(
+   Number(item.price||0)/(Number(pd.usdRate)||1)
+  ));
 
- receipt += storeName + '\n';
- receipt += separator + '\n';
- receipt += 'INTERNAL RECEIPT\n';
- receipt += separator + '\n';
- receipt += 'Bill No: ' + bill.billNo + '\n';
- receipt += 'Date: ' + bill.date + '\n';
- receipt += 'Sales: ' + bill.sales + '\n';
- receipt += 'Agent: ' + bill.agent + '\n';
- receipt += 'Car Plate: ' + (bill.carPlate || '-') + '\n';
- receipt += separator + '\n';
+  if(currency==='USD')return usd;
+  if(currency==='JPY'){
+   return usd*(Number(pd.usdRate)||0)/(Number(pd.jpyRate)||1);
+  }
+  return usd*(Number(pd.usdRate)||0);
+ }
 
- (bill.items || []).forEach(item=>{
+ let receipt='';
+ receipt+=storeName+'\n';
+ receipt+=separator+'\n';
+ receipt+='INTERNAL RECEIPT\n';
+ receipt+=separator+'\n';
+ receipt+='Bill No: '+(bill.billNo||'-')+'\n';
+ receipt+='Date: '+(bill.date||'-')+'\n';
+ receipt+='Sales: '+(bill.sales||'-')+'\n';
+ receipt+='Agent: '+(bill.agent||'-')+'\n';
+ receipt+='Car Plate: '+(bill.carPlate||'-')+'\n';
+ receipt+=separator+'\n';
+
+ (bill.items||[]).forEach(item=>{
   wrapText(item.name).forEach(line=>{
-   receipt += line + '\n';
+   receipt+=line+'\n';
   });
 
-  const itemPrice= bill.currency==='USD' ? Number(item.priceUSD??(item.price/(bill.paymentDetails?.usdRate||1))) : bill.currency==='JPY' ? Number(item.priceUSD??(item.price/(bill.paymentDetails?.usdRate||1)))*(bill.paymentDetails?.usdRate||1)/(bill.paymentDetails?.jpyRate||1) : Number(item.price);
-  receipt += item.qty + ' x ' + formatCurrency(itemPrice,bill.currency||'IDR') + ' = ' + formatCurrency(itemPrice*item.qty,bill.currency||'IDR') + '\n';
+  const qty=Number(item.qty)||0;
+  const price=getItemPrice(item);
+
+  receipt+=qty+' x '+formatCurrency(price,currency)+
+   ' = '+formatCurrency(price*qty,currency)+'\n';
  });
 
- receipt += separator + '\n';
- receipt += 'Subtotal: ' + formatCurrency(bill.displaySubtotal??bill.subtotal,bill.currency||'IDR') + '\n';
- receipt += 'Discount: ' + formatCurrency(bill.displayDiscount??bill.discount,bill.currency||'IDR') + '\n';
- receipt += separator + '\n';
- receipt += 'GRAND TOTAL\n';
- receipt += formatCurrency(bill.displayGrandTotal??bill.grandTotal,bill.currency||'IDR') + '\n';
- receipt += separator + '\n';
+ receipt+=separator+'\n';
+ receipt+='Subtotal: '+formatCurrency(subtotal,currency)+'\n';
+ receipt+='Discount: '+formatCurrency(discount,currency)+'\n';
+ receipt+=separator+'\n';
+ receipt+='GRAND TOTAL\n';
+ receipt+=formatCurrency(grandTotal,currency)+'\n';
+ receipt+=separator+'\n';
 
- receipt += 'PAYMENT BREAKDOWN\n';
- receipt += 'IDR: ' + rupiah(pd.IDR || 0) + '\n';
- receipt += 'USD: $' + Number(pd.USD || 0).toFixed(2) + '\n';
- receipt += 'JPY: ' + formatCurrency(pd.JPY || 0,'JPY') + '\n';
- receipt += 'Total Paid: ' + rupiah(pd.totalPaidIDR || 0) + '\n';
- receipt += 'Change: ' + rupiah(pd.changeIDR || 0) + '\n';
+ receipt+='PAYMENT BREAKDOWN\n';
+ receipt+='IDR: '+rupiah(pd.IDR||0)+'\n';
+ receipt+='USD: $'+Number(pd.USD||0).toFixed(2)+'\n';
+ receipt+='JPY: '+formatCurrency(pd.JPY||0,'JPY')+'\n';
+ receipt+='Total Paid: '+rupiah(pd.totalPaidIDR||0)+'\n';
+ receipt+='Change: '+rupiah(pd.changeIDR||0)+'\n';
 
- receipt += separator + '\n';
- receipt += 'COMMISSION DETAILS\n';
- receipt += 'Mode: ' + (bill.commissionMode || '-') + '\n';
- receipt +=
-  'Guide (' + Number(bill.guidePercent || 0) +
-  '%): ' + rupiah(bill.guideAmount || 0) + '\n';
+ receipt+=separator+'\n';
+ receipt+='COMMISSION DETAILS\n';
+ receipt+='Mode: '+(bill.commissionMode||'-')+'\n';
+ receipt+='Guide ('+Number(bill.guidePercent||0)+
+  '%): '+rupiah(bill.guideAmount||0)+'\n';
+ receipt+='Driver ('+Number(bill.driverPercent||0)+
+  '%): '+rupiah(bill.driverAmount||0)+'\n';
+ receipt+=separator+'\n';
+ receipt+='TOTAL COMMISSION\n';
+ receipt+=rupiah(
+  Number(bill.guideAmount||0)+Number(bill.driverAmount||0)
+ )+'\n\n\n';
 
- receipt +=
-  'Driver (' + Number(bill.driverPercent || 0) +
-  '%): ' + rupiah(bill.driverAmount || 0) + '\n';
-
- receipt += separator + '\n';
- receipt += 'TOTAL COMMISSION\n';
- receipt += rupiah(
-  Number(bill.guideAmount || 0) +
-  Number(bill.driverAmount || 0)
-) + '\n';
-
- receipt += '\n\n';
-
- try{
-  await BluetoothPrinter.print({
-   printerId: 'printer2',
-   text: receipt,
-   logoBase64: localStorage.getItem('jewelryStoreLogo') || '',
-   paperWidth: Number(width)
+ await BluetoothPrinter.print({
+  printerId:'printer2',
+  text:receipt,
+  logoBase64:localStorage.getItem('jewelryStoreLogo')||'',
+  paperWidth:Number(width)
 });
 
-  alert('Internal Receipt sent to Printer 2.');
-  
-}catch(error){
-  throw error;
-}
- 
+ alert('Internal Receipt sent to Printer 2.');
 }
 
- 
 
 async function printBothReceipts(bill){
 
- const printer1 = BluetoothPrinter;
- const printer2 = BluetoothPrinter;
-
- if(!printer1){
+ if(!BluetoothPrinter){
   alert('Bluetooth printer plugin is not available.');
   return;
  }
 
- const results = await Promise.allSettled([
+ const results=await Promise.allSettled([
   printCustomerReceipt(bill),
   printInternalReceipt(bill)
  ]);
 
- const customerOK = results[0].status === 'fulfilled';
- const internalOK = results[1].status === 'fulfilled';
+ const customerOK=results[0].status==='fulfilled';
+ const internalOK=results[1].status==='fulfilled';
 
- if(customerOK && internalOK){
+ if(customerOK&&internalOK){
   alert('Both receipts have been sent to their printers.');
  }else if(customerOK){
   alert('Customer Receipt sent. Internal Receipt failed.');
@@ -3698,28 +3707,119 @@ function printReceiptContent(content,title){
 }
 
 
-// Show both receipt layouts on screen before sending anything to the printers.
+
+// Show both receipt layouts before printing
 function showReceiptPreview(bill){
  const modal=document.getElementById('receiptPreviewModal');
  const content=document.getElementById('receiptPreviewContent');
  if(!modal || !content) return;
+
  const currency=bill.currency||'IDR';
- const fmt=value=>formatCurrency(value,currency);
+ const fmt=value=>formatCurrency(Number(value)||0,currency);
  const safe=value=>escapeProductText(value==null?'':String(value));
+
+ const subtotal=Number(bill.displaySubtotal??bill.subtotal)||0;
+ const discount=Number(bill.displayDiscount??bill.discount)||0;
+
+ // Always calculate grand total after discount
+ const grandTotal=Math.max(0,subtotal-discount);
+
  const rows=(bill.items||[]).map(item=>{
-  const usd=Number(item.priceUSD??(Number(item.price||0)/(Number(bill.paymentDetails?.usdRate)||1)));
+  const usd=Number(item.priceUSD??(
+   Number(item.price||0)/
+   (Number(bill.paymentDetails?.usdRate)||1)
+  ));
+
   let unit=usd;
-  if(currency==='IDR') unit=usd*(Number(bill.paymentDetails?.usdRate)||0);
-  if(currency==='JPY') unit=usd*(Number(bill.paymentDetails?.usdRate)||0)/(Number(bill.paymentDetails?.jpyRate)||1);
-  return `<tr><td>${safe(item.name)}<small>${Number(item.qty||0)} X ${fmt(unit)}</small></td><td>${fmt(unit*Number(item.qty||0))}</td></tr>`;
-}).join('');
+
+  if(currency==='IDR'){
+   unit=usd*(Number(bill.paymentDetails?.usdRate)||0);
+  }
+
+  if(currency==='JPY'){
+   unit=usd*(Number(bill.paymentDetails?.usdRate)||0)/
+    (Number(bill.paymentDetails?.jpyRate)||1);
+  }
+
+  const qty=Number(item.qty)||0;
+
+  return `<tr>
+   <td>${safe(item.name)}
+   <small>${qty} X ${fmt(unit)}</small></td>
+   <td>${fmt(unit*qty)}</td>
+  </tr>`;
+ }).join('');
+
  const logo=localStorage.getItem('jewelryStoreLogo')||'';
- const logoHtml=logo?`<img src="${logo}" alt="Store logo" style="max-width:90px;max-height:65px;object-fit:contain;display:block;margin:0 auto 8px">`:'';
- const receipt=(heading,internal=false)=>`<div class="receipt-preview-paper">${logoHtml}<h3>${safe(localStorage.getItem('jewelryStoreName')||'Jewelry POS')}</h3><h4>${heading}</h4><p>Bill No: ${safe(bill.billNo)}<br>Date: ${safe(bill.date)}<br>Sales: ${safe(bill.sales)}${internal?`<br>Agent: ${safe(bill.agent)}<br>Car Plate: ${safe(bill.carPlate||'-')}`:''}</p><table><thead><tr><th>Item</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><div class="receipt-preview-totals"><p>Subtotal <b>${fmt(bill.displaySubtotal??bill.subtotal)}</b></p><p>Discount <b>${fmt(bill.displayDiscount??bill.discount)}</b></p><p class="receipt-grand">GRAND TOTAL <b>${fmt(bill.displayGrandTotal??bill.grandTotal)}</b></p></div><p>Currency: ${safe(currency)}<br>Payment: ${safe(bill.payment||'-')}</p>${internal?`<hr><h4>COMMISSION DETAILS</h4><p>Guide (${Number(bill.guidePercent||0)}%): <b>${rupiah(bill.guideAmount||0)}</b><br>Driver (${Number(bill.driverPercent||0)}%): <b>${rupiah(bill.driverAmount||0)}</b></p><p>TOTAL COMMISSION: <b>${rupiah(Number(bill.guideAmount||0)+Number(bill.driverAmount||0))}</b></p>`:`<p class="receipt-thanks">Thank you for your purchase!</p>`}</div>`;
- content.innerHTML=`<div class="receipt-preview-grid">${receipt('CUSTOMER RECEIPT',false)}${receipt('INTERNAL RECEIPT',true)}</div>`;
+
+ const logoHtml=logo
+  ? `<img src="${logo}" alt="Store logo"
+  style="max-width:90px;max-height:65px;object-fit:contain;display:block;margin:0 auto 8px">`
+  : '';
+
+ const receipt=(heading,internal=false)=>`
+ <div class="receipt-preview-paper">
+  ${logoHtml}
+
+  <h3>${safe(localStorage.getItem('jewelryStoreName')||'Jewelry POS')}</h3>
+  <h4>${heading}</h4>
+
+  <p>
+   Bill No: ${safe(bill.billNo)}<br>
+   Date: ${safe(bill.date)}<br>
+   Sales: ${safe(bill.sales)}
+   ${internal?`<br>Agent: ${safe(bill.agent)}
+   <br>Car Plate: ${safe(bill.carPlate||'-')}`:''}
+  </p>
+
+  <table>
+   <thead>
+    <tr><th>Item</th><th>Total</th></tr>
+   </thead>
+   <tbody>${rows}</tbody>
+  </table>
+
+  <div class="receipt-preview-totals">
+   <p>Subtotal <b>${fmt(subtotal)}</b></p>
+   <p>Discount <b>${fmt(discount)}</b></p>
+   <p class="receipt-grand">
+    GRAND TOTAL <b>${fmt(grandTotal)}</b>
+   </p>
+  </div>
+
+  <p>
+   Currency: ${safe(currency)}<br>
+   Payment: ${safe(bill.payment||'-')}
+  </p>
+
+  ${internal?`
+   <hr>
+   <h4>COMMISSION DETAILS</h4>
+   <p>
+    Guide (${Number(bill.guidePercent||0)}%):
+    <b>${rupiah(bill.guideAmount||0)}</b><br>
+    Driver (${Number(bill.driverPercent||0)}%):
+    <b>${rupiah(bill.driverAmount||0)}</b>
+   </p>
+   <p>
+    TOTAL COMMISSION:
+    <b>${rupiah(Number(bill.guideAmount||0)+Number(bill.driverAmount||0))}</b>
+   </p>
+  `:`
+   <p class="receipt-thanks">Thank you for your purchase!</p>
+  `}
+ </div>`;
+
+ content.innerHTML=`
+  <div class="receipt-preview-grid">
+   ${receipt('CUSTOMER RECEIPT',false)}
+   ${receipt('INTERNAL RECEIPT',true)}
+  </div>`;
+
  modal.style.display='flex';
  modal.setAttribute('aria-hidden','false');
 }
+
 
 async function printPreviewReceipts(){
  const bill=transactions[transactions.length-1];
