@@ -848,6 +848,181 @@ th {
   letter-spacing: 1.5px;
   margin-bottom: 10px;
 }
+ 
+/* =========================================
+   JEWELRY POS - LUXURY DASHBOARD
+========================================= */
+
+#dashboard {
+  position: relative;
+}
+
+/* DASHBOARD TITLE */
+#dashboard > h2 {
+  color: #17243a;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.7px;
+  margin-bottom: 28px;
+}
+
+#dashboard > h2::after {
+  content: "";
+  display: block;
+  width: 55px;
+  height: 3px;
+  margin-top: 12px;
+  background: linear-gradient(90deg,#b89555,#e5d2a8);
+  border-radius: 5px;
+}
+
+/* STATISTICS GRID */
+#dashboard .stats {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 18px;
+}
+
+/* STATISTIC CARDS */
+#dashboard .stat {
+  position: relative;
+  min-height: 145px;
+  overflow: hidden;
+  padding: 24px 21px;
+
+  background: linear-gradient(145deg,#ffffff,#faf7f0);
+  border: 1px solid #e9e0d0;
+  border-left: 4px solid #b89555;
+  border-radius: 16px;
+
+  box-shadow: 0 8px 24px rgba(35,43,55,.055);
+  transition: transform .2s, box-shadow .2s;
+}
+
+#dashboard .stat:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 13px 30px rgba(35,43,55,.09);
+}
+
+#dashboard .stat small {
+  display: block;
+  color: #8a806d;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+#dashboard .stat strong {
+  display: block;
+  position: relative;
+  z-index: 1;
+  color: #17243a;
+  font-size: 26px;
+  font-weight: 750;
+  margin-top: 19px;
+  overflow-wrap: anywhere;
+}
+
+/* DECORATIVE GOLD CIRCLE */
+#dashboard .stat::after {
+  content: "◇";
+  position: absolute;
+  right: 13px;
+  bottom: -23px;
+  color: rgba(184,149,85,.12);
+  font-size: 100px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* WELCOME PANEL */
+#dashboard > .card {
+  position: relative;
+  min-height: 210px;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 35px;
+  margin-top: 26px !important;
+
+  border: 1px solid #d9c49d;
+  border-radius: 18px;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(23,36,58,.98) 0%,
+      rgba(23,36,58,.94) 45%,
+      rgba(23,36,58,.35) 100%
+    ),
+    url('https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1400&q=85')
+    center / cover no-repeat;
+
+  box-shadow: 0 12px 30px rgba(23,36,58,.12);
+}
+
+#dashboard > .card h3 {
+  position: relative;
+  z-index: 1;
+  color: #e7d2a9;
+  font-size: 24px;
+  letter-spacing: .3px;
+  margin-bottom: 12px;
+}
+
+#dashboard > .card p {
+  position: relative;
+  z-index: 1;
+  color: #f4efe5;
+  font-size: 14px;
+}
+
+/* TABLET AND MOBILE */
+@media(max-width:900px) {
+  #dashboard .stats {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:500px) {
+  #dashboard > h2 {
+    font-size: 23px;
+  }
+
+  #dashboard .stats {
+    gap: 10px;
+  }
+
+  #dashboard .stat {
+    min-height: 120px;
+    padding: 17px 13px;
+  }
+
+  #dashboard .stat strong {
+    font-size: 20px;
+    margin-top: 14px;
+  }
+
+  #dashboard .stat small {
+    font-size: 10px;
+    letter-spacing: .5px;
+  }
+
+  #dashboard > .card {
+    min-height: 175px;
+    padding: 23px 18px;
+    background-position: center;
+  }
+
+  #dashboard > .card h3 {
+    font-size: 20px;
+  }
+}
+
 
 </style>
 </head>
