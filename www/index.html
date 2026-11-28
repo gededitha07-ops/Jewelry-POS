@@ -452,10 +452,10 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
   <input id="billGrandTotal" value="Rp 0" readonly>
 
   <label>Transaction Currency (choose the currency used for this bill)</label>
-  <select id="billCurrency" onchange="renderBillCart();updateBillTotal(true)">
+  <select id="billCurrency">
    <option value="USD">USD ($)</option>
    <option value="IDR">IDR (Rp)</option>
-   <option value="JPY">JPY (Â¥)</option>
+   <option value="JPY">JPY (&#165;)</option>
   </select>
 
   <label>Payment Method</label>
@@ -1574,7 +1574,7 @@ function getCurrencyRate(currency){
 function formatCurrency(value,currency){
  const n=Number(value||0);
  if(currency==='IDR') return 'Rp '+Math.round(n).toLocaleString('id-ID');
- if(currency==='JPY') return 'Â¥'+Math.round(n).toLocaleString('en-US');
+ if(currency==='JPY') return '\u00A5'+Math.round(n).toLocaleString('en-US');
  return '$'+n.toFixed(2);
 }
 function usdToCurrency(value,currency){ return Number(value||0)*getCurrencyRate(currency); }
@@ -1586,6 +1586,8 @@ function generateBillNo(){
 }
 
 function initializeBill(){
+ const currencySelect=document.getElementById('billCurrency');
+ if(currencySelect) currencySelect.dataset.previousCurrency=currencySelect.value||'USD';
  document.getElementById('billNo').value=generateBillNo();
 
  const now=new Date();
@@ -1758,29 +1760,58 @@ function toggleCommissionMode(){
  updateBillTotal();
 }
 
+function roundCurrencyAmount(value,currency){
+ const amount=Number(value)||0;
+ return (currency==='JPY'||currency==='IDR')?String(Math.round(amount)):String(Number(amount.toFixed(2)));
+}
+
 function updateBillTotal(resetFinal=false){
  const currency=document.getElementById('billCurrency')?.value||'USD';
  const subtotalUSD=getBillSubtotal();
  const rate=getCurrencyRate(currency);
  const subtotalDisplay=subtotalUSD*rate;
  const finalInput=document.getElementById('billFinalTotal');
+ if(!finalInput)return;
 
- // Set the default total only when a new bill starts or the currency changes.
- // Do not rewrite the field while the cashier is typing a negotiated amount.
- if(resetFinal || finalInput.dataset.initialized!=='true'){
-  finalInput.value=subtotalDisplay===0?'':(currency==='JPY'||currency==='IDR'?String(Math.round(subtotalDisplay)):String(Number(subtotalDisplay.toFixed(2))));
+ // Set the initial final amount only for a new bill or when explicitly requested.
+ if(resetFinal || finalInput.dataset.initialized!=='true' ||
+    (finalInput.value.trim()==='' && finalInput.dataset.userEdited!=='true' && subtotalUSD>0)){
+  finalInput.value=subtotalUSD===0?'':roundCurrencyAmount(subtotalDisplay,currency);
   finalInput.dataset.initialized='true';
  }
 
  const rawFinal=finalInput.value.trim();
- const finalDisplay=rawFinal===''?0:Number(rawFinal);
- const validFinal=Number.isFinite(finalDisplay)?Math.max(0,finalDisplay):0;
+ const parsedFinal=rawFinal===''?0:Number(rawFinal);
+ const validFinal=Number.isFinite(parsedFinal)?Math.max(0,parsedFinal):0;
  const discountDisplay=Math.max(0,subtotalDisplay-validFinal);
  document.getElementById('billSubtotal').value=formatCurrency(subtotalDisplay,currency);
  document.getElementById('billDiscountDisplay').value=formatCurrency(discountDisplay,currency);
  document.getElementById('billGrandTotal').value=formatCurrency(validFinal,currency);
 }
 
+function handleBillCurrencyChange(){
+ const currencySelect=document.getElementById('billCurrency');
+ const finalInput=document.getElementById('billFinalTotal');
+ const oldCurrency=currencySelect.dataset.previousCurrency||'USD';
+ const newCurrency=currencySelect.value||'USD';
+ const oldAmount=Number(finalInput.value);
+ const oldRate=getCurrencyRate(oldCurrency);
+ const newRate=getCurrencyRate(newCurrency);
+
+ // Preserve the negotiated value when changing the bill currency by converting
+ // through the USD base price instead of silently resetting it to the subtotal.
+ if(finalInput.dataset.initialized==='true' && finalInput.value.trim()!=='' &&
+    Number.isFinite(oldAmount) && oldRate>0 && newRate>0){
+  finalInput.value=roundCurrencyAmount((oldAmount/oldRate)*newRate,newCurrency);
+ }else{
+  finalInput.value='';
+  finalInput.dataset.initialized='false';
+  finalInput.dataset.userEdited='false';
+ }
+ currencySelect.dataset.previousCurrency=newCurrency;
+ renderBillCart();
+ updateBillTotal(false);
+}
 function saveTransaction(){
  if(!['owner','cashier'].includes(localStorage.getItem('jewelryLoginRole'))){alert('Please login before saving a transaction.');return;}
  const sales=document.getElementById('salesName').value.trim();
@@ -1794,14 +1825,14 @@ function saveTransaction(){
  const subtotalDisplay=subtotalUSD*rate;
  const finalDisplayInput=document.getElementById('billFinalTotal').value.trim();
  const finalDisplay=Number(finalDisplayInput);
- if(finalDisplayInput==='' || !Number.isFinite(finalDisplay)){alert('Please enter the negotiated final total.');return;}
- if(finalDisplay<0 || finalDisplay>subtotalDisplay){alert('Final total must be between zero and the subtotal.');return;}
- const discountDisplay=subtotalDisplay-finalDisplay;
  if(!billCart.length){alert('Please add at least one item.');return;}
- if(!sales||!agent||!date||!payment){alert('Please complete Sales Name, Agent, Date and Payment Method.');return;}
+ if(finalDisplayInput==='' || !Number.isFinite(finalDisplay)){alert('Please enter a valid negotiated final total.');return;}
  if((currency!=='USD' && rate<=0)){alert('Please set a valid exchange rate in Settings.');return;}
+ if(finalDisplay<0 || finalDisplay>subtotalDisplay+0.000001){alert('Final total must be between zero and the subtotal.');return;}
+ const discountDisplay=Math.max(0,subtotalDisplay-finalDisplay);
+ if(!sales||!agent||!date||!payment){alert('Please complete Sales Name, Agent, Date and Payment Method.');return;}
  const rates=getCommissionRates();
- if(rates.guide<0||rates.driver<0||rates.guide>100||rates.driver>100){alert('Please enter valid commission percentages (0Ã¢ÂÂ100).');return;}
+ if(rates.guide<0||rates.driver<0||rates.guide>100||rates.driver>100){alert('Please enter valid commission percentages (0-100).');return;}
  const usdRate=Number(localStorage.getItem('jewelryUSDRate'))||0;
  const jpyRate=Number(localStorage.getItem('jewelryJPYRate'))||0;
  const subtotalIDR=Math.round(subtotalUSD*usdRate);
@@ -1829,9 +1860,10 @@ function resetBill(){
  document.getElementById('billAgent').value='';
  document.getElementById('carPlate').value='';
  document.getElementById('billPayment').value='';
- if(document.getElementById('billCurrency')) document.getElementById('billCurrency').value='USD';
+ if(document.getElementById('billCurrency')){document.getElementById('billCurrency').value='USD';document.getElementById('billCurrency').dataset.previousCurrency='USD';}
  document.getElementById('billFinalTotal').value='';
  document.getElementById('billFinalTotal').dataset.initialized='false';
+ document.getElementById('billFinalTotal').dataset.userEdited='false';
  document.getElementById('commissionMode').value='normal';
  document.getElementById('guidePercent').value='';
  document.getElementById('driverPercent').value='';
@@ -1841,8 +1873,8 @@ function resetBill(){
  updateMixedPaymentSummary();
 }
 
-document.getElementById('billFinalTotal').addEventListener('input',updateBillTotal);
-document.getElementById('billCurrency').addEventListener('change',()=>{renderBillCart();updateBillTotal(true);});
+document.getElementById('billFinalTotal').addEventListener('input',()=>{document.getElementById('billFinalTotal').dataset.userEdited='true';updateBillTotal();});
+document.getElementById('billCurrency').addEventListener('change',handleBillCurrencyChange);
 document.getElementById('guidePercent').addEventListener('input',updateBillTotal);
 document.getElementById('driverPercent').addEventListener('input',updateBillTotal);
 
@@ -1908,7 +1940,7 @@ function viewTransaction(id){
   <p>IDR: ${rupiah(pd.IDR)}</p>
   <p>USD: $${Number(pd.USD).toFixed(2)}</p>
   <p>USD Rate: ${rupiah(pd.usdRate)}</p>
-  <p>JPY: Â¥${Math.round(Number(pd.JPY)||0).toLocaleString('en-US')}</p>
+  <p>JPY: \u00A5${Math.round(Number(pd.JPY)||0).toLocaleString('en-US')}</p>
   <p>JPY Rate: ${rupiah(pd.jpyRate)}</p>
   <p>Total Paid: <b>${rupiah(pd.totalPaidIDR)}</b></p>
   <p>Change: <b>${rupiah(pd.changeIDR)}</b></p>
@@ -2167,54 +2199,141 @@ function renderSalesNameOptions(){
 }
 
 
-function backupJewelryData(){
+async function backupJewelryData(){
     if(localStorage.getItem('jewelryLoginRole')!=='owner'){
         alert('Only Owner can backup Jewelry POS data.');
         return;
     }
 
+    const backupButton=document.querySelector('button[onclick="backupJewelryData()"]');
+    if(backupButton){backupButton.disabled=true;backupButton.textContent='CREATING BACKUP...';}
+
     try{
+        // Snapshot all stored POS data. Values remain strings so Restore can
+        // put each entry back into localStorage without changing its format.
         const backup = {
             app: 'Jewelry POS',
-            version: 1,
+            version: 2,
             backupDate: new Date().toISOString(),
             data: {}
         };
 
-        // Snapshot every localStorage entry before creating the export file.
         for(let i=0; i<localStorage.length; i++){
             const key=localStorage.key(i);
             if(key!==null) backup.data[key]=localStorage.getItem(key);
         }
 
+        const keys=Object.keys(backup.data);
+        if(keys.length===0){
+            throw new Error('No Jewelry POS data was found to back up.');
+        }
+
         const json=JSON.stringify(backup, null, 2);
-        if(!json || Object.keys(backup.data).length===0){
-            alert('No Jewelry POS data was found to back up.');
-            return;
+        if(!json || json.length===0){
+            throw new Error('Backup data could not be converted to JSON.');
         }
 
         const blob=new Blob([json],{type:'application/json;charset=utf-8'});
         if(blob.size===0){
-            alert('Backup file is empty. Backup was not started.');
+            throw new Error('The generated backup file is empty.');
+        }
+
+        const date=new Date().toISOString().slice(0,10);
+        const fileName='Jewelry-POS-Backup-'+date+'.json';
+        const file=new File([blob],fileName,{type:'application/json'});
+
+        // Native Android app route: write into Documents, then open the
+        // Android share sheet so the user can save/share the actual file.
+        const capacitor=window.Capacitor;
+        const plugins=capacitor?.Plugins||{};
+        const filesystem=plugins.Filesystem;
+        const sharePlugin=plugins.Share;
+
+        if(filesystem && typeof filesystem.writeFile==='function'){
+            const saved=await filesystem.writeFile({
+                path:fileName,
+                data:json,
+                directory:'DOCUMENTS',
+                encoding:'utf8',
+                recursive:true
+            });
+
+            if(sharePlugin && typeof sharePlugin.share==='function'){
+                await sharePlugin.share({
+                    title:'Jewelry POS Backup',
+                    text:'Jewelry POS data backup',
+                    url:saved.uri
+                });
+                alert('Backup file created successfully. Choose where to save or share it from the Android share menu.');
+                return;
+            }
+
+            alert('Backup file created in the device Documents folder: '+fileName);
             return;
         }
 
-        const url=URL.createObjectURL(blob);
-        const link=document.createElement('a');
-        const date=new Date().toISOString().slice(0,10);
-        link.href=url;
-        link.download='Jewelry-POS-Backup-'+date+'.json';
-        link.style.display='none';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+        // Android Chrome / supported browsers: use the native share sheet.
+        // This avoids relying on the HTML download attribute in mobile WebViews.
+        if(typeof navigator.share==='function' &&
+           typeof navigator.canShare==='function' &&
+           navigator.canShare({files:[file]})){
+            await navigator.share({
+                files:[file],
+                title:'Jewelry POS Backup',
+                text:'Save this Jewelry POS backup file.'
+            });
+            alert('Backup file is ready. Complete the save/share action in the menu that appeared.');
+            return;
+        }
 
-        // Keep the object URL alive long enough for Android/mobile browsers to start the download.
-        setTimeout(()=>URL.revokeObjectURL(url),60000);
-        alert('Backup download has been started. Please check your device Downloads folder for Jewelry-POS-Backup-'+date+'.json.');
+        // Standard browser fallback. Keep a visible download link in case
+        // automatic downloads are blocked by the browser or Android WebView.
+        if(window.__jewelryBackupUrl){
+            URL.revokeObjectURL(window.__jewelryBackupUrl);
+        }
+        const url=URL.createObjectURL(blob);
+        window.__jewelryBackupUrl=url;
+
+        let linkBox=document.getElementById('backupDownloadLink');
+        if(!linkBox){
+            linkBox=document.createElement('div');
+            linkBox.id='backupDownloadLink';
+            linkBox.style.cssText='margin-top:12px;padding:12px;border:1px solid #b58a3a;border-radius:8px;background:#fffaf0;';
+            const backupCard=document.querySelector('#settings .card:has(button[onclick="backupJewelryData()"])');
+            if(backupCard) backupCard.appendChild(linkBox);
+            else document.getElementById('restoreFile')?.parentElement?.appendChild(linkBox);
+        }
+
+        linkBox.innerHTML='';
+        const message=document.createElement('p');
+        message.textContent='Backup file created ('+Math.ceil(blob.size/1024)+' KB). If it did not download automatically, tap the link below:';
+        message.style.margin='0 0 8px';
+        const downloadLink=document.createElement('a');
+        downloadLink.href=url;
+        downloadLink.download=fileName;
+        downloadLink.textContent='DOWNLOAD '+fileName;
+        downloadLink.style.cssText='display:inline-block;padding:10px 14px;background:#17243d;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold;';
+        linkBox.append(message,downloadLink);
+
+        // Trigger a normal browser download while retaining the visible link.
+        const trigger=document.createElement('a');
+        trigger.href=url;
+        trigger.download=fileName;
+        trigger.style.display='none';
+        document.body.appendChild(trigger);
+        trigger.click();
+        trigger.remove();
+
+        alert('Backup file has been created ('+Math.ceil(blob.size/1024)+' KB). If it is not in Downloads, return to Settings and tap the DOWNLOAD link shown below BACKUP DATA.');
     }catch(error){
         console.error('Jewelry POS backup failed:',error);
-        alert('Backup could not be created. Please check browser storage permission and try again.');
+        if(error && error.name==='AbortError'){
+            alert('Backup was created, but the save/share menu was cancelled. Please tap BACKUP DATA again and complete the save action.');
+        }else{
+            alert('Backup failed: '+(error?.message||'Unknown error')+'. Please try again.');
+        }
+    }finally{
+        if(backupButton){backupButton.disabled=false;backupButton.textContent='BACKUP DATA';}
     }
 }
 
@@ -2598,7 +2717,7 @@ const convertedPayment = filtered.reduce(
 <h4>Payment Currency Summary</h4>
 <p>Total IDR: ${rupiah(totalIDR)}</p>
 <p>Total USD: $${totalUSD.toFixed(2)}</p>
-<p>Total JPY: Â¥${Math.round(totalJPY).toLocaleString('en-US')}</p>
+<p>Total JPY: \u00A5${Math.round(totalJPY).toLocaleString('en-US')}</p>
 <p>Total Payment Converted to IDR:
  <strong>${rupiah(convertedPayment)}</strong>
 </p>
@@ -2640,7 +2759,7 @@ const convertedPayment = filtered.reduce(
 <td>${escapeProductText(t.payment||'-')}</td>
 <td>${rupiah(t.paymentDetails?.IDR||0)}</td>
 <td>$${Number(t.paymentDetails?.USD||0).toFixed(2)}</td>
-<td>Â¥${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
+<td>\u00A5${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -2765,7 +2884,7 @@ const convertedPayment = filtered.reduce(
 <h4>Payment Currency Summary</h4>
 <p>Total IDR: ${rupiah(totalIDR)}</p>
 <p>Total USD: $${totalUSD.toFixed(2)}</p>
-<p>Total JPY: Â¥${Math.round(totalJPY).toLocaleString('en-US')}</p>
+<p>Total JPY: \u00A5${Math.round(totalJPY).toLocaleString('en-US')}</p>
 <p>Total Payment Converted to IDR:
  <strong>${rupiah(convertedPayment)}</strong>
 </p>
@@ -2801,7 +2920,7 @@ const convertedPayment = filtered.reduce(
                         <td>${rupiah(t.grandTotal)}</td>
                         <td>${rupiah(t.paymentDetails?.IDR||0)}</td>
                         <td>$${Number(t.paymentDetails?.USD||0).toFixed(2)}</td>
-                        <td>Â¥${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
+                        <td>\u00A5${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -2950,8 +3069,6 @@ async function printCustomerReceipt(bill){
  receipt += 'Bill No: ' + bill.billNo + '\n';
  receipt += 'Date: ' + bill.date + '\n';
  receipt += 'Sales: ' + bill.sales + '\n';
- receipt += 'Agent: ' + bill.agent + '\n';
- receipt += 'Car Plate: ' + (bill.carPlate || '-') + '\n';
  receipt += separator + '\n';
 
  (bill.items || []).forEach(item=>{
@@ -3064,7 +3181,7 @@ async function printInternalReceipt(bill){
  receipt += 'PAYMENT BREAKDOWN\n';
  receipt += 'IDR: ' + rupiah(pd.IDR || 0) + '\n';
  receipt += 'USD: $' + Number(pd.USD || 0).toFixed(2) + '\n';
- receipt += 'JPY: Â¥' + Number(pd.JPY || 0).toLocaleString('en-US',{maximumFractionDigits:0}) + '\n';
+ receipt += 'JPY: \u00A5' + Number(pd.JPY || 0).toLocaleString('en-US',{maximumFractionDigits:0}) + '\n';
  receipt += 'Total Paid: ' + rupiah(pd.totalPaidIDR || 0) + '\n';
  receipt += 'Change: ' + rupiah(pd.changeIDR || 0) + '\n';
 
@@ -3232,7 +3349,7 @@ function showReceiptPreview(bill){
  }).join('');
  const logo=localStorage.getItem('jewelryStoreLogo')||'';
  const logoHtml=logo?`<img src="${logo}" alt="Store logo" style="max-width:90px;max-height:65px;object-fit:contain;display:block;margin:0 auto 8px">`:'';
- const receipt=(heading,internal=false)=>`<div class="receipt-preview-paper">${logoHtml}<h3>${safe(localStorage.getItem('jewelryStoreName')||'Jewelry POS')}</h3><h4>${heading}</h4><p>Bill No: ${safe(bill.billNo)}<br>Date: ${safe(bill.date)}<br>Sales: ${safe(bill.sales)}<br>Agent: ${safe(bill.agent)}<br>Car Plate: ${safe(bill.carPlate||'-')}</p><table><thead><tr><th>Item</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><div class="receipt-preview-totals"><p>Subtotal <b>${fmt(bill.displaySubtotal??bill.subtotal)}</b></p><p>Discount <b>${fmt(bill.displayDiscount??bill.discount)}</b></p><p class="receipt-grand">GRAND TOTAL <b>${fmt(bill.displayGrandTotal??bill.grandTotal)}</b></p></div><p>Currency: ${safe(currency)}<br>Payment: ${safe(bill.payment||'-')}</p>${internal?`<hr><h4>COMMISSION DETAILS</h4><p>Guide (${Number(bill.guidePercent||0)}%): <b>${rupiah(bill.guideAmount||0)}</b><br>Driver (${Number(bill.driverPercent||0)}%): <b>${rupiah(bill.driverAmount||0)}</b></p><p>TOTAL COMMISSION: <b>${rupiah(Number(bill.guideAmount||0)+Number(bill.driverAmount||0))}</b></p>`:`<p class="receipt-thanks">Thank you for your purchase!</p>`}</div>`;
+ const receipt=(heading,internal=false)=>`<div class="receipt-preview-paper">${logoHtml}<h3>${safe(localStorage.getItem('jewelryStoreName')||'Jewelry POS')}</h3><h4>${heading}</h4><p>Bill No: ${safe(bill.billNo)}<br>Date: ${safe(bill.date)}<br>Sales: ${safe(bill.sales)}${internal?`<br>Agent: ${safe(bill.agent)}<br>Car Plate: ${safe(bill.carPlate||'-')}`:''}</p><table><thead><tr><th>Item</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><div class="receipt-preview-totals"><p>Subtotal <b>${fmt(bill.displaySubtotal??bill.subtotal)}</b></p><p>Discount <b>${fmt(bill.displayDiscount??bill.discount)}</b></p><p class="receipt-grand">GRAND TOTAL <b>${fmt(bill.displayGrandTotal??bill.grandTotal)}</b></p></div><p>Currency: ${safe(currency)}<br>Payment: ${safe(bill.payment||'-')}</p>${internal?`<hr><h4>COMMISSION DETAILS</h4><p>Guide (${Number(bill.guidePercent||0)}%): <b>${rupiah(bill.guideAmount||0)}</b><br>Driver (${Number(bill.driverPercent||0)}%): <b>${rupiah(bill.driverAmount||0)}</b></p><p>TOTAL COMMISSION: <b>${rupiah(Number(bill.guideAmount||0)+Number(bill.driverAmount||0))}</b></p>`:`<p class="receipt-thanks">Thank you for your purchase!</p>`}</div>`;
  content.innerHTML=`<div class="receipt-preview-grid">${receipt('CUSTOMER RECEIPT',false)}${receipt('INTERNAL RECEIPT',true)}</div>`;
  modal.style.display='flex';
  modal.setAttribute('aria-hidden','false');
