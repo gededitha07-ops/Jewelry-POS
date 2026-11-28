@@ -2733,10 +2733,10 @@ const convertedPayment = filtered.reduce(
                         <td>${escapeProductText(t.carPlate || '-')}</td>
                         <td>${rupiah(t.discount)}</td>
                         <td>${rupiah(t.grandTotal)}</td>
-<td>${escapeProductText(t.payment||'-')}</td>
-<td>${rupiah(t.paymentDetails?.IDR||0)}</td>
-<td>$${Number(t.paymentDetails?.USD||0).toFixed(2)}</td>
-<td>\u00A5${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
+                        <td>${escapeProductText(t.payment||'-')}</td>
+                        <td>${rupiah(t.paymentDetails?.IDR||0)}</td>
+                        <td>$${Number(t.paymentDetails?.USD||0).toFixed(2)}</td>
+                        <td>${formatCurrency(t.paymentDetails?.JPY||0,'JPY')}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -2897,7 +2897,7 @@ const convertedPayment = filtered.reduce(
                         <td>${rupiah(t.grandTotal)}</td>
                         <td>${rupiah(t.paymentDetails?.IDR||0)}</td>
                         <td>$${Number(t.paymentDetails?.USD||0).toFixed(2)}</td>
-                        <td>\u00A5${Number(t.paymentDetails?.JPY||0).toFixed(2)}</td>
+                       <td>${formatCurrency(t.paymentDetails?.JPY||0,'JPY')}</td>
                     </tr>
                 `).join('')}
             </tbody>
