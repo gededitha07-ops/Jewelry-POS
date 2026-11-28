@@ -1973,19 +1973,25 @@ function formatCurrency(value,currency){
 function usdToCurrency(value,currency){ return Number(value||0)*getCurrencyRate(currency); }
 
 
+
 function generateBillNo(){
  const number = Number(localStorage.getItem('jewelryBillCounter') || 0) + 1;
-
  localStorage.setItem('jewelryBillCounter', String(number));
-
  return 'KJ' + String(number).padStart(2, '0');
 }
 
 
+
 function initializeBill(){
  const currencySelect=document.getElementById('billCurrency');
- if(currencySelect) currencySelect.dataset.previousCurrency=currencySelect.value||'USD';
- document.getElementById('billNo').value=generateBillNo();
+
+ if(currencySelect){
+  currencySelect.dataset.previousCurrency=currencySelect.value||'USD';
+ }
+
+ const counter=Number(localStorage.getItem('jewelryBillCounter')||0);
+ document.getElementById('billNo').value=
+  'KJ'+String(counter+1).padStart(2,'0');
 
  const now=new Date();
  const localDate=new Date(now.getTime()-now.getTimezoneOffset()*60000)
@@ -1997,6 +2003,8 @@ function initializeBill(){
  renderBillCart();
  updateBillTotal(true);
 }
+
+
 
 function renderBillOptions(){
  const productSelect=document.getElementById('billProduct');
@@ -2244,8 +2252,23 @@ function saveTransaction(){
  const bill={id:Date.now().toString(),billNo:document.getElementById('billNo').value,date,sales,agent:agent.name,agentId:agent.id,carPlate:document.getElementById('carPlate').value.trim(),items:billCart.map(item=>({...item,priceIDR:Math.round(item.price*usdRate),priceUSD:item.price,price:Math.round(item.price*usdRate)})),subtotal:subtotalIDR,discount:discountIDR,grandTotal:grandTotalIDR,displaySubtotal:subtotalUSD*rate,displayDiscount:discountDisplay,displayGrandTotal:grandDisplay,currency,currencyRate:rate,payment,paymentDetails,commissionMode:document.getElementById('commissionMode').value,guidePercent:rates.guide,guideAmount,driverPercent:rates.driver,driverAmount,createdAt:new Date().toISOString()};
  const saveButton=document.getElementById('saveTransactionBtn'); if(saveButton.disabled)return; saveButton.disabled=true;
  bill.items.forEach(item=>{if(!item.manual){const product=products.find(p=>p.id===item.productId);if(product){product.stock=Number(product.stock||0)-item.qty;stockHistory.push({date:new Date().toLocaleString('id-ID'),productId:product.id,item:product.code+' - '+product.name,type:'Sale',qty:-item.qty,notes:'Bill '+bill.billNo});}}});
- transactions.push(bill);
- localStorage.setItem('jewelryProducts',JSON.stringify(products));localStorage.setItem('jewelryStockHistory',JSON.stringify(stockHistory));localStorage.setItem('jewelryTransactions',JSON.stringify(transactions));
+ 
+transactions.push(bill);
+
+localStorage.setItem('jewelryProducts',JSON.stringify(products));
+localStorage.setItem('jewelryStockHistory',JSON.stringify(stockHistory));
+localStorage.setItem('jewelryTransactions',JSON.stringify(transactions));
+
+// Advance bill counter only after transaction is saved
+const currentBillNumber = Number(
+ localStorage.getItem('jewelryBillCounter') || 0
+);
+
+localStorage.setItem(
+ 'jewelryBillCounter',
+ String(currentBillNumber + 1)
+);
+
  renderProducts();renderStockManagement();renderBillOptions();renderTransactionHistory();updateDashboard();
  showReceiptPreview(bill);
 }
