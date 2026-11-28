@@ -2720,7 +2720,9 @@ const convertedPayment = filtered.reduce(
                    <th>Payment</th>
                    <th>IDR Paid</th>
                    <th>USD Paid</th>
-                   <th>JPY Paid</th> 
+                   <th>JPY Paid</th>
+                   <th>USD Rate</th>
+                   <th>JPY Rate</th>
                 </tr>
             </thead>
             <tbody>
@@ -2737,6 +2739,8 @@ const convertedPayment = filtered.reduce(
                         <td>${rupiah(t.paymentDetails?.IDR||0)}</td>
                         <td>$${Number(t.paymentDetails?.USD||0).toFixed(2)}</td>
                         <td>${formatCurrency(t.paymentDetails?.JPY||0,'JPY')}</td>
+                        <td>${rupiah(t.paymentDetails?.usdRate||0)}</td>
+                        <td>${rupiah(t.paymentDetails?.jpyRate||0)}</td>
                     </tr>
                 `).join('')}
             </tbody>
