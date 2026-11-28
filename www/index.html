@@ -231,6 +231,391 @@ body.printing-agent-report #reports > .card:nth-of-type(4) {
     color:black;
  }
 } 
+ 
+/* =========================================
+   JEWELRY POS - LUXURY MINIMALIST LIGHT
+   VISUAL REDESIGN
+========================================= */
+
+:root {
+  --lux-navy: #17243a;
+  --lux-navy-soft: #263750;
+  --lux-gold: #b89555;
+  --lux-gold-light: #d6bd8d;
+  --lux-ivory: #faf8f3;
+  --lux-white: #ffffff;
+  --lux-text: #263247;
+  --lux-muted: #87909d;
+  --lux-border: #ece7dd;
+  --lux-shadow: 0 8px 28px rgba(35, 43, 55, .055);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--lux-ivory);
+  color: var(--lux-text);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  letter-spacing: .1px;
+}
+
+/* TOP BAR */
+
+.topbar {
+  height: 70px;
+  background: var(--lux-navy);
+  padding: 0 28px;
+  box-shadow: 0 3px 18px rgba(15, 25, 42, .13);
+}
+
+.brand {
+  gap: 14px;
+  font-size: 19px;
+  letter-spacing: 1.2px;
+}
+
+.brand img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+#loginUserLabel {
+  color: #e5d5b5;
+  font-size: 13px;
+}
+
+/* SIDEBAR */
+
+.sidebar {
+  top: 70px;
+  width: 235px;
+  background: var(--lux-navy);
+  padding: 24px 14px;
+  border-right: 1px solid rgba(255,255,255,.05);
+}
+
+.sidebar button {
+  color: #d9dfeb;
+  padding: 14px 15px;
+  margin-bottom: 7px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background .2s ease, color .2s ease;
+}
+
+.sidebar button.active {
+  background: linear-gradient(135deg, #b89555, #9d783b);
+  color: white;
+  box-shadow: 0 5px 15px rgba(184,149,85,.2);
+}
+
+.sidebar button:hover {
+  background: rgba(214,189,141,.15);
+  color: #e7d2a9;
+}
+
+.sidebar button[onclick="logout()"] {
+  background: rgba(160, 55, 65, .2) !important;
+  color: #f2c5c8 !important;
+}
+
+.menu-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+/* MAIN CONTENT */
+
+main {
+  margin-left: 235px;
+  width: calc(100% - 235px);
+  padding: 30px;
+  padding-top: 32px;
+}
+
+.page h2 {
+  color: var(--lux-navy);
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -.5px;
+  margin-bottom: 24px;
+}
+
+h3 {
+  color: var(--lux-navy);
+  font-size: 16px;
+  font-weight: 650;
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+/* CARDS */
+
+.card {
+  background: var(--lux-white);
+  border: 1px solid var(--lux-border);
+  border-radius: 17px;
+  padding: 24px;
+  margin-bottom: 22px;
+  box-shadow: var(--lux-shadow);
+}
+
+.card hr {
+  border-color: var(--lux-border) !important;
+}
+
+/* DASHBOARD STATISTICS */
+
+.stats {
+  gap: 18px;
+}
+
+.stat {
+  background: linear-gradient(145deg, #fff, #fdfbf7);
+  border: 1px solid var(--lux-border);
+  border-left: 4px solid var(--lux-gold);
+  border-radius: 16px;
+  padding: 23px;
+  box-shadow: var(--lux-shadow);
+}
+
+.stat small {
+  color: var(--lux-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .4px;
+}
+
+.stat strong {
+  color: var(--lux-navy);
+  font-size: 25px;
+  font-weight: 700;
+  margin-top: 13px;
+}
+
+/* INPUTS AND SELECTS */
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 45px;
+  padding: 12px 14px;
+  border: 1px solid #e5e0d6;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--lux-text);
+  font-size: 14px;
+  margin: 8px 0 17px;
+  outline: none;
+  transition: border .2s, box-shadow .2s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--lux-gold);
+  box-shadow: 0 0 0 3px rgba(184,149,85,.12);
+}
+
+input::placeholder {
+  color: #a8adb6;
+}
+
+label {
+  display: block;
+  color: #596477;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: .25px;
+  margin-top: 5px;
+}
+
+/* BUTTONS */
+
+.btn {
+  min-height: 43px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #b89555, #9d783b);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  box-shadow: 0 4px 12px rgba(184,149,85,.16);
+  transition: transform .2s, box-shadow .2s;
+}
+
+.btn:hover {
+  box-shadow: 0 6px 17px rgba(184,149,85,.25);
+  transform: translateY(-1px);
+}
+
+.btn.dark {
+  background: var(--lux-navy);
+  box-shadow: none;
+}
+
+/* TABLES */
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+}
+
+th {
+  background: #f7f4ed;
+  color: #6d6049;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+th, td {
+  padding: 14px 13px;
+  border-bottom: 1px solid #eeeae2;
+  font-size: 13px;
+}
+
+td {
+  color: #485365;
+}
+
+tbody tr:hover {
+  background: #fcfaf6;
+}
+
+/* LOGIN SCREEN */
+
+#loginScreen {
+  background:
+    radial-gradient(circle at top right, #40516a, transparent 45%),
+    linear-gradient(135deg, #101b32, #263750) !important;
+}
+
+#loginScreen > div {
+  border: 1px solid #e8ddc7;
+  border-radius: 22px !important;
+  padding: 38px !important;
+  box-shadow: 0 20px 65px rgba(0,0,0,.25);
+}
+
+#loginScreen h2 {
+  letter-spacing: 2px;
+  font-size: 25px;
+}
+
+#loginScreen .btn {
+  min-height: 48px;
+}
+
+/* REPORT AND SUMMARY */
+
+#reportSummary {
+  line-height: 1.9;
+}
+
+#reportSummary h4 {
+  color: var(--lux-navy);
+  margin-top: 20px;
+}
+
+/* MOBILE RESPONSIVE */
+
+@media(max-width:700px) {
+  .topbar {
+    height: 60px;
+    padding: 0 12px;
+  }
+
+  .brand {
+    font-size: 14px;
+    gap: 7px;
+  }
+
+  .brand img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .sidebar {
+    top: 60px;
+    width: 62px;
+    padding: 12px 5px;
+  }
+
+  .sidebar button {
+    min-height: 47px;
+    padding: 12px 3px;
+    border-radius: 9px;
+  }
+
+  main {
+    margin-left: 62px;
+    width: calc(100% - 62px);
+    padding: 16px 11px;
+  }
+
+  .page h2 {
+    font-size: 21px;
+    margin-bottom: 18px;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 13px;
+    margin-bottom: 15px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .stat {
+    padding: 15px 12px;
+  }
+
+  .stat strong {
+    font-size: 19px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  th, td {
+    padding: 11px 9px;
+    font-size: 12px;
+  }
+
+  .btn {
+    max-width: 100%;
+  }
+}
+
+/* PRESERVE RECEIPT AND REPORT PRINT STYLING */
+
+@media print {
+  body {
+    background: white !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+  }
+}
+
 </style>
 </head>
  
