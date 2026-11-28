@@ -8,9 +8,7 @@ import android.print.PrintAttributes;
 import android.print.PrintManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-
-import androidx.activity.result.ActivityResult;
-
+import android.view.ViewGroup;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
@@ -29,48 +27,69 @@ public class PDFPrinterPlugin extends Plugin {
     // SAVE REPORT AS PDF
     // ==============================
 
-    @PluginMethod
-    public void savePDF(PluginCall call) {
+   
+@PluginMethod
+public void savePDF(PluginCall call) {
 
-        String html = call.getString("html");
+    String html = call.getString("html");
 
-        if (html == null || html.trim().isEmpty()) {
-            call.reject("Report content is empty.");
-            return;
-        }
+    if (html == null || html.trim().isEmpty()) {
+        call.reject("Report content is empty.");
+        return;
+    }
 
-        getActivity().runOnUiThread(() -> {
-            try {
-                Context context = getContext();
+    Activity activity = getActivity();
 
-                WebView webView = new WebView(context);
-                webView.getSettings().setJavaScriptEnabled(false);
+    if (activity == null) {
+        call.reject("Android activity is unavailable.");
+        return;
+    }
 
-                webView.setWebViewClient(new WebViewClient() {
+    activity.runOnUiThread(() -> {
 
-                    @Override
-                    public void onPageFinished(WebView view, String url) {
+        try {
+            WebView webView = new WebView(activity);
+
+            webView.setBackgroundColor(android.graphics.Color.WHITE);
+            webView.getSettings().setJavaScriptEnabled(false);
+
+            activity.addContentView(
+                webView,
+                new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            );
+
+            webView.setWebViewClient(new WebViewClient() {
+
+                private boolean printed = false;
+
+                @Override
+                public void onPageFinished(WebView view, String url) {
+
+                    if (printed) return;
+                    printed = true;
+
+                    view.post(() -> {
 
                         try {
                             PrintManager printManager =
-                                (PrintManager) context.getSystemService(
+                                (PrintManager) activity.getSystemService(
                                     Context.PRINT_SERVICE
                                 );
 
                             if (printManager == null) {
                                 call.reject("Android print service unavailable.");
-                                view.destroy();
                                 return;
                             }
 
                             android.print.PrintDocumentAdapter adapter =
                                 view.createPrintDocumentAdapter(
-                                    "Jewelry-POS-Sales-Report"
+                                    "Jewelry-POS-Report"
                                 );
 
-                            printManager.print(
-                                "Jewelry POS Sales Report",
-                                adapter,
+                            PrintAttributes attributes =
                                 new PrintAttributes.Builder()
                                     .setMediaSize(
                                         PrintAttributes.MediaSize.ISO_A4
@@ -78,7 +97,12 @@ public class PDFPrinterPlugin extends Plugin {
                                     .setColorMode(
                                         PrintAttributes.COLOR_MODE_COLOR
                                     )
-                                    .build()
+                                    .build();
+
+                            printManager.print(
+                                "Jewelry POS Report",
+                                adapter,
+                                attributes
                             );
 
                             JSObject result = new JSObject();
@@ -89,27 +113,26 @@ public class PDFPrinterPlugin extends Plugin {
                             call.reject(
                                 "PDF printing failed: " + e.getMessage()
                             );
-                            view.destroy();
                         }
-                    }
-                });
+                    });
+                }
+            });
 
-                webView.loadDataWithBaseURL(
-                    null,
-                    html,
-                    "text/html",
-                    "UTF-8",
-                    null
-                );
+            webView.loadDataWithBaseURL(
+                "https://localhost/",
+                html,
+                "text/html",
+                "UTF-8",
+                null
+            );
 
-            } catch (Exception e) {
-                call.reject(
-                    "Unable to open PDF printing: " + e.getMessage()
-                );
-            }
-        });
-    }
-
+        } catch (Exception e) {
+            call.reject(
+                "Unable to open PDF printing: " + e.getMessage()
+            );
+        }
+    });
+}
 
     // ==============================
     // SAVE BACKUP FILE
